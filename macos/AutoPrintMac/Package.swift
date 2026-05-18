@@ -14,6 +14,11 @@ let package = Package(
         .executableTarget(
             name: "AutoPrintMac",
             path: "AutoPrintMac"
+        ),
+        .testTarget(
+            name: "AutoPrintMacTests",
+            dependencies: ["AutoPrintMac"],
+            path: "AutoPrintMacTests"
         )
     ]
 )
