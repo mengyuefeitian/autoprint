@@ -1,0 +1,16 @@
+{
+  "watchFolders": [
+    {
+      "path": "C:\\Users\\example\\PrintInbox",
+      "enabled": true
+    }
+  ],
+  "printerName": "Office Printer",
+  "scanIntervalSeconds": 30,
+  "fileStableSeconds": 10,
+  "maxRetries": 3,
+  "printedFolderName": "printed",
+  "failedFolderName": "failed",
+  "launchAtLogin": false,
+  "autoPrintEnabled": true
+}

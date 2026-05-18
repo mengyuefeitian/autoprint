@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "AutoPrintConfig",
+  "type": "object",
+  "required": [
+    "watchFolders",
+    "printerName",
+    "scanIntervalSeconds",
+    "fileStableSeconds",
+    "maxRetries",
+    "printedFolderName",
+    "failedFolderName",
+    "launchAtLogin",
+    "autoPrintEnabled"
+  ],
+  "properties": {
+    "watchFolders": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["path", "enabled"],
+        "properties": {
+          "path": { "type": "string", "minLength": 1 },
+          "enabled": { "type": "boolean" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "printerName": { "type": "string", "minLength": 1 },
+    "scanIntervalSeconds": { "type": "integer", "minimum": 5, "default": 30 },
+    "fileStableSeconds": { "type": "integer", "minimum": 1, "default": 10 },
+    "maxRetries": { "type": "integer", "minimum": 0, "maximum": 10, "default": 3 },
+    "printedFolderName": { "type": "string", "minLength": 1, "default": "printed" },
+    "failedFolderName": { "type": "string", "minLength": 1, "default": "failed" },
+    "launchAtLogin": { "type": "boolean", "default": false },
+    "autoPrintEnabled": { "type": "boolean", "default": true }
+  },
+  "additionalProperties": false
+}
