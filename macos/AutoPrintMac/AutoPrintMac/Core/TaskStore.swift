@@ -15,15 +15,46 @@ enum DestinationMover {
             let timestamp = formatter.string(from: now)
             let baseName = source.deletingPathExtension().lastPathComponent
             let pathExtension = source.pathExtension
-            let fileName = pathExtension.isEmpty
-                ? "\(baseName)-\(timestamp)"
-                : "\(baseName)-\(timestamp).\(pathExtension)"
-            destination = directory.appendingPathComponent(fileName)
+            destination = uniqueDestination(
+                in: directory,
+                baseName: "\(baseName)-\(timestamp)",
+                pathExtension: pathExtension,
+                fileManager: manager
+            )
         } else {
             destination = originalDestination
         }
 
         try manager.moveItem(at: source, to: destination)
         return destination
+    }
+
+    private static func uniqueDestination(
+        in directory: URL,
+        baseName: String,
+        pathExtension: String,
+        fileManager: FileManager
+    ) -> URL {
+        var suffix: Int?
+
+        while true {
+            let fileName: String
+            if let suffix {
+                fileName = pathExtension.isEmpty
+                    ? "\(baseName)-\(suffix)"
+                    : "\(baseName)-\(suffix).\(pathExtension)"
+            } else {
+                fileName = pathExtension.isEmpty
+                    ? baseName
+                    : "\(baseName).\(pathExtension)"
+            }
+
+            let destination = directory.appendingPathComponent(fileName)
+            if !fileManager.fileExists(atPath: destination.path) {
+                return destination
+            }
+
+            suffix = (suffix ?? 1) + 1
+        }
     }
 }

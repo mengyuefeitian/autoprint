@@ -32,6 +32,27 @@ final class DestinationMoveTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: existing), Data("existing".utf8))
     }
 
+    func testMoveAppendsDeterministicSuffixWhenTimestampedDestinationExists() throws {
+        let root = temporaryDirectory()
+        let source = root.appendingPathComponent("invoice.pdf")
+        let destination = root.appendingPathComponent("printed")
+        let original = destination.appendingPathComponent("invoice.pdf")
+        let timestamped = destination.appendingPathComponent("invoice-20240309-160000.pdf")
+        let suffixed = destination.appendingPathComponent("invoice-20240309-160000-2.pdf")
+        let now = Date(timeIntervalSince1970: 1_710_000_000)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        try Data("original".utf8).write(to: original)
+        try Data("timestamped".utf8).write(to: timestamped)
+        try Data("new".utf8).write(to: source)
+
+        let moved = try DestinationMover.move(source, into: destination, now: now)
+
+        XCTAssertEqual(moved, suffixed)
+        XCTAssertEqual(try Data(contentsOf: moved), Data("new".utf8))
+        XCTAssertEqual(try Data(contentsOf: original), Data("original".utf8))
+        XCTAssertEqual(try Data(contentsOf: timestamped), Data("timestamped".utf8))
+    }
+
     private func temporaryDirectory() -> URL {
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("AutoPrintMacTests")
