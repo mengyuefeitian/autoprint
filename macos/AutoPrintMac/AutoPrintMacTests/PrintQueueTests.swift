@@ -17,6 +17,16 @@ final class PrintQueueTests: XCTestCase {
         XCTAssertEqual(queue.tasks.map(\.state), [.queued, .queued, .queued])
     }
 
+    func testReplaceQueuedFilesDeduplicatesDuplicateURLsInSingleScan() {
+        let queue = PrintQueue()
+        let createdAt = Date(timeIntervalSince1970: 10)
+        let duplicate = discoveredFile("duplicate.pdf", createdAt: createdAt)
+
+        queue.replaceQueuedFiles([duplicate, duplicate])
+
+        XCTAssertEqual(queue.tasks.map(\.file.url), [duplicate.url])
+    }
+
     func testNextTaskReturnsFirstQueuedTask() {
         let queue = PrintQueue()
         let first = discoveredFile("1.pdf", createdAt: Date(timeIntervalSince1970: 10))

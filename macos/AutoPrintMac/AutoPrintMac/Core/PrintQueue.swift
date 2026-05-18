@@ -23,9 +23,9 @@ final class PrintQueue {
     private(set) var tasks: [PrintTask] = []
 
     func replaceQueuedFiles(_ files: [DiscoveredFile]) {
-        let existing = Set(tasks.map { $0.file.url })
+        var seenURLs = Set(tasks.map { $0.file.url })
         let newTasks = files
-            .filter { !existing.contains($0.url) }
+            .filter { seenURLs.insert($0.url).inserted }
             .map { PrintTask(id: UUID(), file: $0, state: .queued, retryCount: 0, lastError: nil) }
 
         tasks.append(contentsOf: newTasks)
