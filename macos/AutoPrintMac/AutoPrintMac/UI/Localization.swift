@@ -44,6 +44,17 @@ enum L10nKey {
     case selectedPrinter
     case noPrintersFound
     case refresh
+    case printSettings
+    case colorMode
+    case color
+    case grayscale
+    case printerDefault
+    case paperSize
+    case a4
+    case scaleMode
+    case fitToPage
+    case actualSize
+    case printSettingsHint
     case noPrintLogsYet
     case printers
     case printerCapabilityMessage
@@ -113,6 +124,28 @@ enum L10n {
         case (.noPrintersFound, .english): return "No system printers found"
         case (.refresh, .chinese): return "刷新"
         case (.refresh, .english): return "Refresh"
+        case (.printSettings, .chinese): return "打印设置"
+        case (.printSettings, .english): return "Print settings"
+        case (.colorMode, .chinese): return "颜色模式"
+        case (.colorMode, .english): return "Color mode"
+        case (.color, .chinese): return "彩色"
+        case (.color, .english): return "Color"
+        case (.grayscale, .chinese): return "黑白/灰度"
+        case (.grayscale, .english): return "Black and white"
+        case (.printerDefault, .chinese): return "跟随打印机默认"
+        case (.printerDefault, .english): return "Printer default"
+        case (.paperSize, .chinese): return "纸张大小"
+        case (.paperSize, .english): return "Paper size"
+        case (.a4, .chinese): return "A4"
+        case (.a4, .english): return "A4"
+        case (.scaleMode, .chinese): return "页面适配"
+        case (.scaleMode, .english): return "Page scaling"
+        case (.fitToPage, .chinese): return "适应纸张大小"
+        case (.fitToPage, .english): return "Fit to page"
+        case (.actualSize, .chinese): return "实际大小"
+        case (.actualSize, .english): return "Actual size"
+        case (.printSettingsHint, .chinese): return "PDF 和图片会优先使用这些设置；Office 文档受本机 Office/LibreOffice 支持能力影响。"
+        case (.printSettingsHint, .english): return "PDF and images use these settings first; Office documents depend on local Office or LibreOffice support."
         case (.noPrintLogsYet, .chinese): return "暂无打印日志。"
         case (.noPrintLogsYet, .english): return "No print logs yet."
         case (.printers, .chinese): return "打印机"

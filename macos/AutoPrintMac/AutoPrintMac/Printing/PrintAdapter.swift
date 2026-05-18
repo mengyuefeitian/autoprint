@@ -4,6 +4,12 @@ protocol PrintAdapter {
     func print(file: URL, printerName: String, timeoutSeconds: Int) async throws
 }
 
+extension PrintAdapter {
+    func print(file: URL, printerName: String, printSettings: PrintSettings, timeoutSeconds: Int) async throws {
+        try await print(file: file, printerName: printerName, timeoutSeconds: timeoutSeconds)
+    }
+}
+
 enum PrintAdapterError: Error, LocalizedError {
     case unsupportedType(String)
     case commandFailed(String)

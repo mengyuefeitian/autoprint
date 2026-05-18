@@ -2,11 +2,19 @@ import Foundation
 
 final class MacPrintAdapter: PrintAdapter {
     func print(file: URL, printerName: String, timeoutSeconds: Int = 120) async throws {
+        try await print(file: file, printerName: printerName, printSettings: .defaultValue, timeoutSeconds: timeoutSeconds)
+    }
+
+    func print(file: URL, printerName: String, printSettings: PrintSettings, timeoutSeconds: Int = 120) async throws {
         let fileExtension = file.pathExtension.lowercased()
 
         switch fileExtension {
         case "pdf", "png", "jpg", "jpeg", "tif", "tiff", "heic":
-            try await run("/usr/bin/lp", arguments: ["-d", printerName, file.path], timeoutSeconds: timeoutSeconds)
+            try await run(
+                "/usr/bin/lp",
+                arguments: ["-d", printerName] + MacPrintOptions.lpOptions(for: printSettings) + [file.path],
+                timeoutSeconds: timeoutSeconds
+            )
         case "doc", "docx", "xls", "xlsx", "ppt", "pptx":
             try await printWithLibreOffice(file: file, printerName: printerName, timeoutSeconds: timeoutSeconds)
         default:
@@ -98,6 +106,37 @@ final class MacPrintAdapter: PrintAdapter {
 
             DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + .seconds(timeout), execute: timeoutWork)
         }
+    }
+}
+
+enum MacPrintOptions {
+    static func lpOptions(for settings: PrintSettings) -> [String] {
+        var options: [String] = []
+
+        switch settings.paperSize {
+        case .a4:
+            options += ["-o", "media=A4"]
+        case .printerDefault:
+            break
+        }
+
+        switch settings.scaleMode {
+        case .fitToPage:
+            options += ["-o", "fit-to-page"]
+        case .actualSize:
+            break
+        }
+
+        switch settings.colorMode {
+        case .color:
+            options += ["-o", "print-color-mode=color"]
+        case .grayscale:
+            options += ["-o", "print-color-mode=monochrome"]
+        case .printerDefault:
+            break
+        }
+
+        return options
     }
 }
 

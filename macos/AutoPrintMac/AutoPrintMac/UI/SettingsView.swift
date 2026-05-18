@@ -90,6 +90,28 @@ struct SettingsView: View {
                 }
             }
 
+            Section(text(.printSettings)) {
+                Picker(text(.colorMode), selection: $configStore.config.printSettings.colorMode) {
+                    Text(text(.color)).tag(PrintColorMode.color)
+                    Text(text(.grayscale)).tag(PrintColorMode.grayscale)
+                    Text(text(.printerDefault)).tag(PrintColorMode.printerDefault)
+                }
+
+                Picker(text(.paperSize), selection: $configStore.config.printSettings.paperSize) {
+                    Text(text(.a4)).tag(PrintPaperSize.a4)
+                    Text(text(.printerDefault)).tag(PrintPaperSize.printerDefault)
+                }
+
+                Picker(text(.scaleMode), selection: $configStore.config.printSettings.scaleMode) {
+                    Text(text(.fitToPage)).tag(PrintScaleMode.fitToPage)
+                    Text(text(.actualSize)).tag(PrintScaleMode.actualSize)
+                }
+
+                Text(text(.printSettingsHint))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             Stepper(
                 "\(text(.scanInterval)): \(configStore.config.scanIntervalSeconds) \(text(.seconds))",
                 value: $configStore.config.scanIntervalSeconds,

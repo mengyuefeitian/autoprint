@@ -63,6 +63,9 @@ final class AppConfigStore: ObservableObject {
         do {
             return try JSONDecoder().decode(AppConfig.self, from: data)
         } catch {
+            if let migrated = try? JSONDecoder().decode(LegacyAppConfig.self, from: data) {
+                return migrated.currentConfig
+            }
             return .defaultValue
         }
     }
@@ -82,5 +85,32 @@ final class AppConfigStore: ObservableObject {
         }
 
         defaults.set(data, forKey: key)
+    }
+}
+
+private struct LegacyAppConfig: Codable {
+    var watchFolders: [WatchFolder]
+    var printerName: String
+    var scanIntervalSeconds: Int
+    var fileStableSeconds: Int
+    var maxRetries: Int
+    var printedFolderName: String
+    var failedFolderName: String
+    var launchAtLogin: Bool
+    var autoPrintEnabled: Bool
+
+    var currentConfig: AppConfig {
+        AppConfig(
+            watchFolders: watchFolders,
+            printerName: printerName,
+            printSettings: .defaultValue,
+            scanIntervalSeconds: scanIntervalSeconds,
+            fileStableSeconds: fileStableSeconds,
+            maxRetries: maxRetries,
+            printedFolderName: printedFolderName,
+            failedFolderName: failedFolderName,
+            launchAtLogin: launchAtLogin,
+            autoPrintEnabled: autoPrintEnabled
+        )
     }
 }
