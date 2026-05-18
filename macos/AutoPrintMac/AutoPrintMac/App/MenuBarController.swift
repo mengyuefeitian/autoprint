@@ -1,8 +1,10 @@
 import AppKit
+import SwiftUI
 
 final class MenuBarController: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var pauseMenuItem: NSMenuItem?
+    private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -30,8 +32,27 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openSettings() {
+        if let settingsWindow {
+            settingsWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 720, height: 460),
+            styleMask: [.titled, .closable, .miniaturizable, .resizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "AutoPrint Settings"
+        window.contentViewController = NSHostingController(rootView: SettingsView())
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.delegate = self
+        settingsWindow = window
+
+        window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-        NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
     }
 
     @objc private func togglePrinting() {
@@ -53,5 +74,13 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 extension MenuBarController: NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         updatePauseMenuItem()
+    }
+}
+
+extension MenuBarController: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        if notification.object as? NSWindow === settingsWindow {
+            settingsWindow = nil
+        }
     }
 }
