@@ -9,12 +9,20 @@ final class AppConfigStore: ObservableObject {
         }
     }
 
+    @Published var language: AppLanguage {
+        didSet {
+            defaults.set(language.rawValue, forKey: languageKey)
+        }
+    }
+
     private let defaults: UserDefaults
     private let key = "AutoPrintMac.appConfig"
+    private let languageKey = "AutoPrintMac.language"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         self.config = Self.load(from: defaults, key: key)
+        self.language = Self.loadLanguage(from: defaults, key: languageKey)
     }
 
     func toggleAutoPrintEnabled() {
@@ -31,6 +39,15 @@ final class AppConfigStore: ObservableObject {
         } catch {
             return .defaultValue
         }
+    }
+
+    private static func loadLanguage(from defaults: UserDefaults, key: String) -> AppLanguage {
+        guard let rawValue = defaults.string(forKey: key),
+              let language = AppLanguage(rawValue: rawValue) else {
+            return .chinese
+        }
+
+        return language
     }
 
     private func save(_ config: AppConfig) {

@@ -5,24 +5,24 @@ struct SettingsView: View {
 
     var body: some View {
         TabView {
-            StatusView(config: configStore.config)
+            StatusView(config: configStore.config, language: configStore.language)
                 .tabItem {
-                    Label("Status", systemImage: "chart.line.uptrend.xyaxis")
+                    Label(text(.status), systemImage: "chart.line.uptrend.xyaxis")
                 }
 
             settingsTab
                 .tabItem {
-                    Label("Settings", systemImage: "gearshape")
+                    Label(text(.settings), systemImage: "gearshape")
                 }
 
-            LogsView()
+            LogsView(language: configStore.language)
                 .tabItem {
-                    Label("Logs", systemImage: "doc.text")
+                    Label(text(.logs), systemImage: "doc.text")
                 }
 
-            CapabilityView()
+            CapabilityView(language: configStore.language)
                 .tabItem {
-                    Label("Capabilities", systemImage: "checkmark.seal")
+                    Label(text(.capabilities), systemImage: "checkmark.seal")
                 }
         }
         .frame(width: 720, height: 460)
@@ -30,30 +30,45 @@ struct SettingsView: View {
 
     private var settingsTab: some View {
         Form {
-            Toggle("Automatic printing", isOn: $configStore.config.autoPrintEnabled)
+            Picker(text(.language), selection: $configStore.language) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(language.displayName).tag(language)
+                }
+            }
 
-            TextField("Printer", text: $configStore.config.printerName)
+            LabeledContent(text(.version)) {
+                Text(AppVersion.current)
+                    .foregroundStyle(.secondary)
+            }
+
+            Toggle(text(.automaticPrinting), isOn: $configStore.config.autoPrintEnabled)
+
+            TextField(text(.printer), text: $configStore.config.printerName)
 
             Stepper(
-                "Scan interval: \(configStore.config.scanIntervalSeconds) seconds",
+                "\(text(.scanInterval)): \(configStore.config.scanIntervalSeconds) \(text(.seconds))",
                 value: $configStore.config.scanIntervalSeconds,
                 in: 5...3600,
                 step: 5
             )
 
             Stepper(
-                "Stable wait: \(configStore.config.fileStableSeconds) seconds",
+                "\(text(.stableWait)): \(configStore.config.fileStableSeconds) \(text(.seconds))",
                 value: $configStore.config.fileStableSeconds,
                 in: 1...600
             )
 
             Stepper(
-                "Retries: \(configStore.config.maxRetries)",
+                "\(text(.retries)): \(configStore.config.maxRetries)",
                 value: $configStore.config.maxRetries,
                 in: 0...10
             )
         }
         .formStyle(.grouped)
         .padding(24)
+    }
+
+    private func text(_ key: L10nKey) -> String {
+        L10n.text(key, language: configStore.language)
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StatusView: View {
     let config: AppConfig
+    let language: AppLanguage
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
@@ -9,31 +10,31 @@ struct StatusView: View {
                 statusIndicator
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(config.autoPrintEnabled ? "Running" : "Paused")
+                    Text(config.autoPrintEnabled ? text(.running) : text(.paused))
                         .font(.title2)
                         .fontWeight(.semibold)
-                    Text(config.autoPrintEnabled ? "Automatic printing is enabled." : "Automatic printing is paused.")
+                    Text(config.autoPrintEnabled ? text(.automaticPrintingEnabled) : text(.automaticPrintingPaused))
                         .foregroundStyle(.secondary)
                 }
             }
 
             Grid(alignment: .leading, horizontalSpacing: 28, verticalSpacing: 14) {
                 GridRow {
-                    Text("Printer")
+                    Text(text(.printer))
                         .foregroundStyle(.secondary)
                     Text(printerName)
                 }
 
                 GridRow {
-                    Text("Watch folders")
+                    Text(text(.watchFolders))
                         .foregroundStyle(.secondary)
                     Text("\(config.watchFolders.filter(\.enabled).count)")
                 }
 
                 GridRow {
-                    Text("Scan interval")
+                    Text(text(.scanInterval))
                         .foregroundStyle(.secondary)
-                    Text("\(config.scanIntervalSeconds) seconds")
+                    Text("\(config.scanIntervalSeconds) \(text(.seconds))")
                 }
             }
             .font(.body)
@@ -51,6 +52,10 @@ struct StatusView: View {
     }
 
     private var printerName: String {
-        config.printerName.isEmpty ? "Default printer" : config.printerName
+        config.printerName.isEmpty ? text(.defaultPrinter) : config.printerName
+    }
+
+    private func text(_ key: L10nKey) -> String {
+        L10n.text(key, language: language)
     }
 }

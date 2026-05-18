@@ -1,12 +1,14 @@
 import SwiftUI
 
 struct CapabilityView: View {
+    let language: AppLanguage
+
     var body: some View {
         List {
-            capabilityRow("Printers", message: "Uses macOS printer selection and the configured printer name when available.")
-            capabilityRow("PDF files", message: "PDF printing is supported through the macOS print adapter.")
-            capabilityRow("Images", message: "Common image files can be sent to the macOS print system.")
-            capabilityRow("Office documents", message: "Office formats may require an installed app that can print them on this Mac.")
+            capabilityRow(text(.printers), message: text(.printerCapabilityMessage))
+            capabilityRow(text(.pdfFiles), message: text(.pdfCapabilityMessage))
+            capabilityRow(text(.images), message: text(.imagesCapabilityMessage))
+            capabilityRow(text(.officeDocuments), message: text(.officeCapabilityMessage))
         }
         .listStyle(.inset)
         .padding(12)
@@ -20,5 +22,9 @@ struct CapabilityView: View {
                 .foregroundStyle(.secondary)
         }
         .padding(.vertical, 6)
+    }
+
+    private func text(_ key: L10nKey) -> String {
+        L10n.text(key, language: language)
     }
 }

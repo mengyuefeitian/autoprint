@@ -3,7 +3,8 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/dist/AutoPrint.app"
-VERSION="${1:-0.1.0}"
+PLIST="$ROOT/Resources/Info.plist"
+VERSION="${1:-$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$PLIST")}"
 DMG="$ROOT/dist/AutoPrint-$VERSION-local.dmg"
 RW_DMG="$ROOT/dist/AutoPrint-$VERSION-local-rw.dmg"
 STAGING="$ROOT/dist/dmg-staging"
