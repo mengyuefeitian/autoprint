@@ -3,7 +3,9 @@ import SwiftUI
 
 final class MenuBarController: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
+    private var settingsMenuItem: NSMenuItem?
     private var pauseMenuItem: NSMenuItem?
+    private var quitMenuItem: NSMenuItem?
     private var settingsWindow: NSWindow?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -12,21 +14,24 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
         let menu = NSMenu()
         menu.delegate = self
-        let settingsItem = NSMenuItem(title: "Open Settings", action: #selector(openSettings), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: "", action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(settingsItem)
+        settingsMenuItem = settingsItem
 
         let pauseItem = NSMenuItem(title: "", action: #selector(togglePrinting), keyEquivalent: "p")
         pauseItem.target = self
         menu.addItem(pauseItem)
         pauseMenuItem = pauseItem
-        updatePauseMenuItem()
+        updateMenuTitles()
 
         menu.addItem(NSMenuItem.separator())
 
-        let quitItem = NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: "", action: #selector(quit), keyEquivalent: "q")
         quitItem.target = self
         menu.addItem(quitItem)
+        quitMenuItem = quitItem
+        updateMenuTitles()
 
         statusItem?.menu = menu
     }
@@ -57,23 +62,30 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
     @objc private func togglePrinting() {
         AppConfigStore.shared.toggleAutoPrintEnabled()
-        updatePauseMenuItem()
+        updateMenuTitles()
     }
 
     @objc private func quit() {
         NSApp.terminate(nil)
     }
 
-    private func updatePauseMenuItem() {
+    private func updateMenuTitles() {
+        let language = AppConfigStore.shared.language
         let enabled = AppConfigStore.shared.config.autoPrintEnabled
-        pauseMenuItem?.title = enabled ? "Pause Printing" : "Resume Printing"
+        settingsMenuItem?.title = text(.openSettings, language: language)
+        pauseMenuItem?.title = enabled ? text(.pausePrinting, language: language) : text(.resumePrinting, language: language)
         pauseMenuItem?.state = enabled ? .off : .on
+        quitMenuItem?.title = text(.quit, language: language)
+    }
+
+    private func text(_ key: L10nKey, language: AppLanguage) -> String {
+        L10n.text(key, language: language)
     }
 }
 
 extension MenuBarController: NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
-        updatePauseMenuItem()
+        updateMenuTitles()
     }
 }
 

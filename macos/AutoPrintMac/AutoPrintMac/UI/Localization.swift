@@ -34,6 +34,16 @@ enum L10nKey {
     case retries
     case language
     case version
+    case openSettings
+    case pausePrinting
+    case resumePrinting
+    case quit
+    case addWatchFolder
+    case remove
+    case noWatchFolders
+    case selectedPrinter
+    case noPrintersFound
+    case refresh
     case noPrintLogsYet
     case printers
     case printerCapabilityMessage
@@ -83,6 +93,26 @@ enum L10n {
         case (.language, .english): return "Language"
         case (.version, .chinese): return "版本"
         case (.version, .english): return "Version"
+        case (.openSettings, .chinese): return "打开设置"
+        case (.openSettings, .english): return "Open Settings"
+        case (.pausePrinting, .chinese): return "暂停打印"
+        case (.pausePrinting, .english): return "Pause Printing"
+        case (.resumePrinting, .chinese): return "恢复打印"
+        case (.resumePrinting, .english): return "Resume Printing"
+        case (.quit, .chinese): return "退出"
+        case (.quit, .english): return "Quit"
+        case (.addWatchFolder, .chinese): return "添加监听目录"
+        case (.addWatchFolder, .english): return "Add watch folder"
+        case (.remove, .chinese): return "移除"
+        case (.remove, .english): return "Remove"
+        case (.noWatchFolders, .chinese): return "还没有监听目录。"
+        case (.noWatchFolders, .english): return "No watch folders yet."
+        case (.selectedPrinter, .chinese): return "选择打印机"
+        case (.selectedPrinter, .english): return "Select printer"
+        case (.noPrintersFound, .chinese): return "未找到系统打印机"
+        case (.noPrintersFound, .english): return "No system printers found"
+        case (.refresh, .chinese): return "刷新"
+        case (.refresh, .english): return "Refresh"
         case (.noPrintLogsYet, .chinese): return "暂无打印日志。"
         case (.noPrintLogsYet, .english): return "No print logs yet."
         case (.printers, .chinese): return "打印机"

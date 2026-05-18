@@ -2,7 +2,7 @@ import Foundation
 
 struct WatchFolder: Codable, Equatable, Identifiable {
     var id: String { path }
-    let path: String
+    var path: String
     var enabled: Bool
 }
 

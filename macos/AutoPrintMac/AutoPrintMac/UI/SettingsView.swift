@@ -1,7 +1,9 @@
+import AppKit
 import SwiftUI
 
 struct SettingsView: View {
     @ObservedObject private var configStore = AppConfigStore.shared
+    @State private var printers: [PrinterInfo] = PrinterDetector().printers()
 
     var body: some View {
         TabView {
@@ -43,7 +45,50 @@ struct SettingsView: View {
 
             Toggle(text(.automaticPrinting), isOn: $configStore.config.autoPrintEnabled)
 
-            TextField(text(.printer), text: $configStore.config.printerName)
+            Section(text(.printer)) {
+                if printers.isEmpty {
+                    Text(text(.noPrintersFound))
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker(text(.selectedPrinter), selection: $configStore.config.printerName) {
+                        Text(text(.selectedPrinter)).tag("")
+                        ForEach(printers) { printer in
+                            Text(printer.name).tag(printer.name)
+                        }
+                    }
+                }
+
+                Button(text(.refresh)) {
+                    printers = PrinterDetector().printers()
+                }
+            }
+
+            Section(text(.watchFolders)) {
+                if configStore.config.watchFolders.isEmpty {
+                    Text(text(.noWatchFolders))
+                        .foregroundStyle(.secondary)
+                } else {
+                    ForEach(configStore.config.watchFolders) { folder in
+                        HStack {
+                            Toggle(
+                                folder.path,
+                                isOn: Binding(
+                                    get: { folder.enabled },
+                                    set: { configStore.setWatchFolder(path: folder.path, enabled: $0) }
+                                )
+                            )
+                            Spacer()
+                            Button(text(.remove)) {
+                                configStore.removeWatchFolder(path: folder.path)
+                            }
+                        }
+                    }
+                }
+
+                Button(text(.addWatchFolder)) {
+                    addWatchFolder()
+                }
+            }
 
             Stepper(
                 "\(text(.scanInterval)): \(configStore.config.scanIntervalSeconds) \(text(.seconds))",
@@ -70,5 +115,17 @@ struct SettingsView: View {
 
     private func text(_ key: L10nKey) -> String {
         L10n.text(key, language: configStore.language)
+    }
+
+    private func addWatchFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = text(.addWatchFolder)
+
+        if panel.runModal() == .OK, let url = panel.url {
+            configStore.addWatchFolder(path: url.path)
+        }
     }
 }
