@@ -4,6 +4,7 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject private var configStore = AppConfigStore.shared
     @State private var printers: [PrinterInfo] = PrinterDetector().printers()
+    @State private var manualWatchFolderPath = ""
 
     var body: some View {
         TabView {
@@ -85,7 +86,15 @@ struct SettingsView: View {
                     }
                 }
 
-                Button(text(.addWatchFolder)) {
+                HStack {
+                    TextField(text(.manualWatchFolderPath), text: $manualWatchFolderPath)
+                    Button(text(.addPath)) {
+                        addManualWatchFolder()
+                    }
+                    .disabled(manualWatchFolderPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+
+                Button(text(.chooseFolder)) {
                     addWatchFolder()
                 }
             }
@@ -141,13 +150,31 @@ struct SettingsView: View {
 
     private func addWatchFolder() {
         let panel = NSOpenPanel()
-        panel.canChooseFiles = false
+        panel.canChooseFiles = true
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
-        panel.prompt = text(.addWatchFolder)
+        panel.canCreateDirectories = true
+        panel.resolvesAliases = true
+        panel.treatsFilePackagesAsDirectories = true
+        panel.directoryURL = FileManager.default.homeDirectoryForCurrentUser
+        panel.prompt = text(.chooseFolder)
 
         if panel.runModal() == .OK, let url = panel.url {
-            configStore.addWatchFolder(path: url.path)
+            addWatchFolder(url: url)
         }
+    }
+
+    private func addManualWatchFolder() {
+        configStore.addWatchFolder(path: manualWatchFolderPath)
+        manualWatchFolderPath = ""
+    }
+
+    private func addWatchFolder(url: URL) {
+        let values = try? url.resourceValues(forKeys: [.isDirectoryKey])
+        guard values?.isDirectory == true else {
+            return
+        }
+
+        configStore.addWatchFolder(path: url.path)
     }
 }

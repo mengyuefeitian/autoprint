@@ -39,6 +39,9 @@ enum L10nKey {
     case resumePrinting
     case quit
     case addWatchFolder
+    case chooseFolder
+    case manualWatchFolderPath
+    case addPath
     case remove
     case noWatchFolders
     case selectedPrinter
@@ -114,6 +117,12 @@ enum L10n {
         case (.quit, .english): return "Quit"
         case (.addWatchFolder, .chinese): return "添加监听目录"
         case (.addWatchFolder, .english): return "Add watch folder"
+        case (.chooseFolder, .chinese): return "选择目录"
+        case (.chooseFolder, .english): return "Choose folder"
+        case (.manualWatchFolderPath, .chinese): return "手动输入目录路径"
+        case (.manualWatchFolderPath, .english): return "Manual folder path"
+        case (.addPath, .chinese): return "添加路径"
+        case (.addPath, .english): return "Add path"
         case (.remove, .chinese): return "移除"
         case (.remove, .english): return "Remove"
         case (.noWatchFolders, .chinese): return "还没有监听目录。"
