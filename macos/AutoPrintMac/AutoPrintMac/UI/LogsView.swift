@@ -14,6 +14,9 @@ struct LogsView: View {
 
                 Spacer()
 
+                Button(text(.clearLogs), action: logStore.removeAll)
+                    .disabled(logStore.entries.isEmpty)
+
                 Button(text(.copyLogs), action: copyLogs)
                     .disabled(logStore.entries.isEmpty)
             }

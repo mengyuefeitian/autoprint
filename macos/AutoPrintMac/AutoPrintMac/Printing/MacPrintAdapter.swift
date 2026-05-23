@@ -13,6 +13,7 @@ final class MacPrintAdapter: PrintAdapter {
             try await run(
                 "/usr/bin/lp",
                 arguments: ["-d", printerName] + MacPrintOptions.lpOptions(for: printSettings) + [file.path],
+                sourceFile: file,
                 timeoutSeconds: timeoutSeconds
             )
         case "doc", "docx", "xls", "xlsx", "ppt", "pptx":
@@ -33,10 +34,19 @@ final class MacPrintAdapter: PrintAdapter {
             throw PrintAdapterError.commandFailed("LibreOffice is not installed or not executable")
         }
 
-        try await run(command, arguments: ["--headless", "--pt", printerName, file.path], timeoutSeconds: timeoutSeconds)
+        try await run(
+            command,
+            arguments: ["--headless", "--pt", printerName, file.path],
+            sourceFile: file,
+            timeoutSeconds: timeoutSeconds
+        )
     }
 
-    private func run(_ launchPath: String, arguments: [String], timeoutSeconds: Int) async throws {
+    private func run(_ launchPath: String, arguments: [String], sourceFile: URL?, timeoutSeconds: Int) async throws {
+        if let sourceFile, !FileManager.default.fileExists(atPath: sourceFile.path) {
+            throw PrintAdapterError.commandFailed("Print source file does not exist: \(sourceFile.path)")
+        }
+
         let process = Process()
         let errorPipe = Pipe()
         let outputPipe = Pipe()
@@ -67,19 +77,25 @@ final class MacPrintAdapter: PrintAdapter {
             try? outputPipe.fileHandleForReading.close()
         }
 
-        try process.run()
+        do {
+            try process.run()
+        } catch {
+            throw PrintAdapterError.commandFailed("Failed to start print command \(launchPath): \(error.localizedDescription)")
+        }
         try await waitForExit(process, timeoutSeconds: timeoutSeconds)
 
         guard process.terminationStatus == 0 else {
             let errorMessage = String(data: errorOutput.data, encoding: .utf8)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            let detail: String
-            if let errorMessage, !errorMessage.isEmpty {
-                detail = ": \(errorMessage)"
-            } else {
-                detail = ""
-            }
-            throw PrintAdapterError.commandFailed("\(launchPath) exited with status \(process.terminationStatus)\(detail)")
+            let outputMessage = String(data: standardOutput.data, encoding: .utf8)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let sourceDetail = sourceFile.map { " source=\($0.path) exists=\(FileManager.default.fileExists(atPath: $0.path))" } ?? ""
+            let stderrDetail = errorMessage.flatMap { $0.isEmpty ? nil : " stderr=\($0)" } ?? ""
+            let stdoutDetail = outputMessage.flatMap { $0.isEmpty ? nil : " stdout=\($0)" } ?? ""
+            let command = ([launchPath] + arguments).joined(separator: " ")
+            throw PrintAdapterError.commandFailed(
+                "\(launchPath) exited with status \(process.terminationStatus).\(sourceDetail) command=\(command)\(stderrDetail)\(stdoutDetail)"
+            )
         }
     }
 

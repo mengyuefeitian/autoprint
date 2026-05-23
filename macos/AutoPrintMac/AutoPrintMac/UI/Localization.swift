@@ -60,6 +60,7 @@ enum L10nKey {
     case printSettingsHint
     case noPrintLogsYet
     case copyLogs
+    case clearLogs
     case printers
     case printerCapabilityMessage
     case pdfFiles
@@ -160,6 +161,8 @@ enum L10n {
         case (.noPrintLogsYet, .english): return "No print logs yet."
         case (.copyLogs, .chinese): return "复制日志"
         case (.copyLogs, .english): return "Copy logs"
+        case (.clearLogs, .chinese): return "清除日志"
+        case (.clearLogs, .english): return "Clear logs"
         case (.printers, .chinese): return "打印机"
         case (.printers, .english): return "Printers"
         case (.printerCapabilityMessage, .chinese): return "选择打印机后，应用会使用配置的打印机名称提交任务。"
