@@ -1,4 +1,6 @@
 macos/AutoPrintMac/.build/
 macos/AutoPrintMac/.manual-build/
 macos/AutoPrintMac/dist/
+macos/AutoPrintMac/.downloads/
+macos/AutoPrintMac/Resources/Vendor/
 .DS_Store

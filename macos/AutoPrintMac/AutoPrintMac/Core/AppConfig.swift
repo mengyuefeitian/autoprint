@@ -32,11 +32,52 @@ struct PrintSettings: Codable, Equatable {
     var colorMode: PrintColorMode
     var paperSize: PrintPaperSize
     var scaleMode: PrintScaleMode
+    var officeSettings: OfficePrintSettings
 
     static let defaultValue = PrintSettings(
         colorMode: .color,
         paperSize: .a4,
-        scaleMode: .fitToPage
+        scaleMode: .fitToPage,
+        officeSettings: .defaultValue
+    )
+
+    init(
+        colorMode: PrintColorMode,
+        paperSize: PrintPaperSize,
+        scaleMode: PrintScaleMode,
+        officeSettings: OfficePrintSettings = .defaultValue
+    ) {
+        self.colorMode = colorMode
+        self.paperSize = paperSize
+        self.scaleMode = scaleMode
+        self.officeSettings = officeSettings
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case colorMode
+        case paperSize
+        case scaleMode
+        case officeSettings
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        colorMode = try container.decode(PrintColorMode.self, forKey: .colorMode)
+        paperSize = try container.decode(PrintPaperSize.self, forKey: .paperSize)
+        scaleMode = try container.decode(PrintScaleMode.self, forKey: .scaleMode)
+        officeSettings = try container.decodeIfPresent(OfficePrintSettings.self, forKey: .officeSettings) ?? .defaultValue
+    }
+}
+
+struct OfficePrintSettings: Codable, Equatable {
+    var useLibreOfficeHeadless: Bool
+    var useMicrosoftWord: Bool
+    var usePages: Bool
+
+    static let defaultValue = OfficePrintSettings(
+        useLibreOfficeHeadless: false,
+        useMicrosoftWord: false,
+        usePages: false
     )
 }
 

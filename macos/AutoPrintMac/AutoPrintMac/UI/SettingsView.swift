@@ -121,6 +121,27 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            Section(text(.officePrintSettings)) {
+                Toggle(text(.useLibreOfficeHeadless), isOn: $configStore.config.printSettings.officeSettings.useLibreOfficeHeadless)
+                Text(text(.libreOfficeHeadlessHint))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                if let url = URL(string: "https://www.libreoffice.org/download/download-libreoffice/") {
+                    Link(text(.downloadLibreOffice), destination: url)
+                }
+
+                Toggle(text(.useMicrosoftWord), isOn: $configStore.config.printSettings.officeSettings.useMicrosoftWord)
+                Text(text(.microsoftWordHint))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Toggle(text(.usePages), isOn: $configStore.config.printSettings.officeSettings.usePages)
+                Text(text(.pagesHint))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             Stepper(
                 "\(text(.scanInterval)): \(configStore.config.scanIntervalSeconds) \(text(.seconds))",
                 value: $configStore.config.scanIntervalSeconds,

@@ -36,6 +36,12 @@ struct StatusView: View {
                         .foregroundStyle(.secondary)
                     Text("\(config.scanIntervalSeconds) \(text(.seconds))")
                 }
+
+                GridRow {
+                    Text(text(.version))
+                        .foregroundStyle(.secondary)
+                    Text(AppVersion.current)
+                }
             }
             .font(.body)
 

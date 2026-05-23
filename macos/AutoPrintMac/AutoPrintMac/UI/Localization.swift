@@ -70,6 +70,14 @@ enum L10nKey {
     case officeDocuments
     case officeCapabilityMessage
     case seconds
+    case officePrintSettings
+    case useLibreOfficeHeadless
+    case libreOfficeHeadlessHint
+    case downloadLibreOffice
+    case useMicrosoftWord
+    case microsoftWordHint
+    case usePages
+    case pagesHint
 }
 
 enum L10n {
@@ -155,8 +163,8 @@ enum L10n {
         case (.fitToPage, .english): return "Fit to page"
         case (.actualSize, .chinese): return "实际大小"
         case (.actualSize, .english): return "Actual size"
-        case (.printSettingsHint, .chinese): return "PDF 和图片会优先使用这些设置；Office 文档需要 LibreOffice headless 转成临时 PDF 后打印。"
-        case (.printSettingsHint, .english): return "PDF and images use these settings first; Office documents require LibreOffice headless conversion before printing."
+        case (.printSettingsHint, .chinese): return "PDF 和图片会优先使用这些设置；Office 文档需要在下方启用一种转换方式。"
+        case (.printSettingsHint, .english): return "PDF and images use these settings first; enable an Office conversion method below for Office documents."
         case (.noPrintLogsYet, .chinese): return "暂无打印日志。"
         case (.noPrintLogsYet, .english): return "No print logs yet."
         case (.copyLogs, .chinese): return "复制日志"
@@ -177,10 +185,26 @@ enum L10n {
         case (.imagesCapabilityMessage, .english): return "Common image files can be sent to the macOS print system."
         case (.officeDocuments, .chinese): return "Office 文档"
         case (.officeDocuments, .english): return "Office documents"
-        case (.officeCapabilityMessage, .chinese): return "Office 文档通过 LibreOffice headless 无界面转 PDF 后打印，不调用 Word/Pages，避免权限弹窗卡住队列。"
-        case (.officeCapabilityMessage, .english): return "Office documents are converted to PDF with LibreOffice headless, without calling Word or Pages."
+        case (.officeCapabilityMessage, .chinese): return "Office 文档默认不打印；可在设置中选择 LibreOffice、Microsoft Word 或 Pages 转 PDF。"
+        case (.officeCapabilityMessage, .english): return "Office documents do not print by default; choose LibreOffice, Microsoft Word, or Pages PDF conversion in settings."
         case (.seconds, .chinese): return "秒"
         case (.seconds, .english): return "seconds"
+        case (.officePrintSettings, .chinese): return "Office 文档转换"
+        case (.officePrintSettings, .english): return "Office document conversion"
+        case (.useLibreOfficeHeadless, .chinese): return "使用 LibreOffice 无界面转 PDF"
+        case (.useLibreOfficeHeadless, .english): return "Use LibreOffice headless PDF conversion"
+        case (.libreOfficeHeadlessHint, .chinese): return "需要用户自行下载安装 LibreOffice；不会打开 Word/Pages，适合自动打印。"
+        case (.libreOfficeHeadlessHint, .english): return "Requires LibreOffice installed by the user; does not open Word or Pages and is best for automatic printing."
+        case (.downloadLibreOffice, .chinese): return "打开 LibreOffice 下载页面"
+        case (.downloadLibreOffice, .english): return "Open LibreOffice download page"
+        case (.useMicrosoftWord, .chinese): return "使用本地 Microsoft Word 转 PDF"
+        case (.useMicrosoftWord, .english): return "Use local Microsoft Word PDF conversion"
+        case (.microsoftWordHint, .chinese): return "首次使用需要允许 AutoPrint 控制 Word；后续通常无需再次授权。PDF 会写入原文档所在目录。"
+        case (.microsoftWordHint, .english): return "First use requires allowing AutoPrint to control Word; later runs usually do not ask again. PDFs are written next to the source document."
+        case (.usePages, .chinese): return "使用 macOS Pages 转 PDF"
+        case (.usePages, .english): return "Use macOS Pages PDF conversion"
+        case (.pagesHint, .chinese): return "macOS 专有；首次使用需要允许 AutoPrint 控制 Pages。PDF 会写入原文档所在目录。"
+        case (.pagesHint, .english): return "macOS only; first use requires allowing AutoPrint to control Pages. PDFs are written next to the source document."
         }
     }
 }
