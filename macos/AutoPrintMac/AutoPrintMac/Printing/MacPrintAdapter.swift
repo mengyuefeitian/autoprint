@@ -15,49 +15,62 @@ final class MacPrintAdapter: PrintAdapter {
 
         switch fileExtension {
         case "pdf", "png", "jpg", "jpeg", "tif", "tiff", "heic":
-            let spool = try MacPrintSpooler.copyToLocalSpool(file)
-            defer { try? FileManager.default.removeItem(at: spool.directory) }
-            try await run(
-                "/usr/bin/lp",
-                arguments: ["-d", cupsPrinterName] + MacPrintOptions.lpOptions(for: printSettings) + [spool.file.path],
-                sourceFile: file,
-                submittedFile: spool.file,
-                timeoutSeconds: timeoutSeconds
-            )
+            try await printPDFOrImage(file: file, printerName: cupsPrinterName, printSettings: printSettings, timeoutSeconds: timeoutSeconds)
         case "doc", "docx", "xls", "xlsx", "ppt", "pptx":
-            try await printOfficeDocument(file: file, printerName: cupsPrinterName, timeoutSeconds: timeoutSeconds)
+            try await printOfficeDocument(file: file, printerName: cupsPrinterName, printSettings: printSettings, timeoutSeconds: timeoutSeconds)
         default:
             throw PrintAdapterError.unsupportedType(fileExtension)
         }
     }
 
-    private func printOfficeDocument(file: URL, printerName: String, timeoutSeconds: Int) async throws {
+    private func printPDFOrImage(file: URL, printerName: String, printSettings: PrintSettings, timeoutSeconds: Int) async throws {
+        let spool = try MacPrintSpooler.copyToLocalSpool(file)
+        defer { try? FileManager.default.removeItem(at: spool.directory) }
+        try await run(
+            "/usr/bin/lp",
+            arguments: ["-d", printerName] + MacPrintOptions.lpOptions(for: printSettings) + [spool.file.path],
+            sourceFile: file,
+            submittedFile: spool.file,
+            timeoutSeconds: timeoutSeconds
+        )
+    }
+
+    private func printOfficeDocument(file: URL, printerName: String, printSettings: PrintSettings, timeoutSeconds: Int) async throws {
         guard let app = MacOfficePrintAppDetector.selectApp(forExtension: file.pathExtension.lowercased()) else {
             throw PrintAdapterError.commandFailed("No supported Office print app found. Install Microsoft Word, Pages, or LibreOffice.")
         }
 
+        let converted = try MacPrintSpooler.pdfDestination(for: file)
+        defer { try? FileManager.default.removeItem(at: converted.directory) }
+
         switch app {
         case .microsoftWord:
             try await runAppleScript(
-                MacOfficePrintScripts.microsoftWord(filePath: file.path),
+                MacOfficePrintScripts.microsoftWordExportPDF(filePath: file.path, outputPath: converted.file.path),
                 sourceFile: file,
                 timeoutSeconds: timeoutSeconds
             )
         case .pages:
             try await runAppleScript(
-                MacOfficePrintScripts.pages(filePath: file.path),
+                MacOfficePrintScripts.pagesExportPDF(filePath: file.path, outputPath: converted.file.path),
                 sourceFile: file,
                 timeoutSeconds: timeoutSeconds
             )
         case .libreOffice(let command):
             try await run(
                 command,
-                arguments: ["--headless", "--pt", printerName, file.path],
+                arguments: ["--headless", "--convert-to", "pdf", "--outdir", converted.directory.path, file.path],
                 sourceFile: file,
                 submittedFile: file,
                 timeoutSeconds: timeoutSeconds
             )
         }
+
+        guard FileManager.default.fileExists(atPath: converted.file.path) else {
+            throw PrintAdapterError.commandFailed("Office document conversion did not create PDF: \(converted.file.path)")
+        }
+
+        try await printPDFOrImage(file: converted.file, printerName: printerName, printSettings: printSettings, timeoutSeconds: timeoutSeconds)
     }
 
     private func runAppleScript(_ script: String, sourceFile: URL, timeoutSeconds: Int) async throws {
@@ -175,6 +188,15 @@ enum MacPrintSpooler {
         try manager.copyItem(at: source, to: destination)
         return MacPrintSpoolFile(directory: directory, file: destination)
     }
+
+    static func pdfDestination(for source: URL) throws -> MacPrintSpoolFile {
+        let manager = FileManager.default
+        let directory = manager.temporaryDirectory
+            .appendingPathComponent("AutoPrintConvertedPDF", isDirectory: true)
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try manager.createDirectory(at: directory, withIntermediateDirectories: true)
+        return MacPrintSpoolFile(directory: directory, file: directory.appendingPathComponent("document.pdf"))
+    }
 }
 
 enum MacOfficePrintApp: Equatable {
@@ -220,25 +242,27 @@ enum MacOfficePrintAppDetector {
 }
 
 enum MacOfficePrintScripts {
-    static func microsoftWord(filePath: String) -> String {
+    static func microsoftWordExportPDF(filePath: String, outputPath: String) -> String {
         """
         set docPath to "\(appleScriptEscaped(filePath))"
+        set pdfPath to "\(appleScriptEscaped(outputPath))"
         tell application "Microsoft Word"
             open POSIX file docPath
             set printedDocument to active document
-            print out printedDocument
+            save as printedDocument file format format PDF file name pdfPath
             close printedDocument saving no
         end tell
         """
     }
 
-    static func pages(filePath: String) -> String {
+    static func pagesExportPDF(filePath: String, outputPath: String) -> String {
         """
         set docPath to "\(appleScriptEscaped(filePath))"
+        set pdfPath to "\(appleScriptEscaped(outputPath))"
         tell application "Pages"
             open POSIX file docPath
             set printedDocument to front document
-            print printedDocument without print dialog
+            export printedDocument to POSIX file pdfPath as PDF
             close printedDocument saving no
         end tell
         """
