@@ -31,7 +31,7 @@ final class PrintLogStore: ObservableObject {
             return
         }
 
-        DispatchQueue.main.async {
+        DispatchQueue.main.sync {
             self.appendOnMain(message, createdAt: createdAt)
         }
     }
@@ -43,7 +43,7 @@ final class PrintLogStore: ObservableObject {
             return
         }
 
-        DispatchQueue.main.async {
+        DispatchQueue.main.sync {
             self.entries.removeAll()
             self.saveEntries()
         }

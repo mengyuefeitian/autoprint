@@ -2,13 +2,15 @@ import AppKit
 
 final class PrinterDetector {
     func printers() -> [PrinterInfo] {
-        NSPrinter.printerNames.map {
+        let cupsPrinters = MacPrinterNameResolver.cupsPrinterQueues()
+        let names = cupsPrinters.isEmpty ? NSPrinter.printerNames : cupsPrinters
+        return names.map {
             PrinterInfo(name: $0, isAvailable: true, reason: nil)
         }
     }
 
     func find(name: String) -> PrinterInfo {
-        if NSPrinter.printerNames.contains(name) {
+        if printers().contains(where: { $0.name == name }) {
             return PrinterInfo(name: name, isAvailable: true, reason: nil)
         }
 

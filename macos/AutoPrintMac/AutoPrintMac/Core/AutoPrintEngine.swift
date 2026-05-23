@@ -51,6 +51,8 @@ final class AutoPrintEngine {
             return
         }
 
+        try recoverLegacyFailedFiles(config: config, now: now)
+
         let files = try scanner.scan(config: config)
         logStore.append("Scanned \(config.watchFolders.filter(\.enabled).count) folder(s), found \(files.count) file(s)", createdAt: now)
 
@@ -65,7 +67,7 @@ final class AutoPrintEngine {
                 continue
             }
 
-            try await printAndMove(file: file, config: config)
+            try await printAndMove(file: file, config: config, now: now)
         }
     }
 
@@ -96,7 +98,7 @@ final class AutoPrintEngine {
         }
     }
 
-    private func printAndMove(file: DiscoveredFile, config: AppConfig) async throws {
+    private func printAndMove(file: DiscoveredFile, config: AppConfig, now: Date) async throws {
         let root = watchRoot(for: file.url, config: config)
         let printedDirectory = root.appendingPathComponent(config.printedFolderName)
 
@@ -112,19 +114,50 @@ final class AutoPrintEngine {
                     timeoutSeconds: 120
                 )
                 let moved = try DestinationMover.move(file.url, into: printedDirectory)
-                logStore.append("Printed \(file.fileName) -> \(moved.path)")
+                logStore.append("Printed \(file.fileName) -> \(moved.path)", createdAt: now)
                 return
             } catch {
                 lastError = error
                 logStore.append(
-                    "Print attempt \(attemptIndex + 1)/\(attempts) failed for \(file.fileName): \(error.localizedDescription)"
+                    "Print attempt \(attemptIndex + 1)/\(attempts) failed for \(file.fileName): \(error.localizedDescription)",
+                    createdAt: now
                 )
             }
         }
 
         logStore.append(
-            "Print failed; kept \(file.fileName) in the watch folder for retry. Last error: \(lastError?.localizedDescription ?? "Unknown error")"
+            "Print failed; kept \(file.fileName) in the watch folder for retry. Last error: \(lastError?.localizedDescription ?? "Unknown error")",
+            createdAt: now
         )
+    }
+
+    private func recoverLegacyFailedFiles(config: AppConfig, now: Date) throws {
+        let manager = FileManager.default
+
+        for folder in config.watchFolders where folder.enabled {
+            let root = URL(fileURLWithPath: folder.path).standardizedFileURL
+            let failedDirectory = root.appendingPathComponent(config.failedFolderName).standardizedFileURL
+            var isDirectory: ObjCBool = false
+
+            guard manager.fileExists(atPath: failedDirectory.path, isDirectory: &isDirectory),
+                  isDirectory.boolValue else {
+                continue
+            }
+
+            let files = try manager.contentsOfDirectory(
+                at: failedDirectory,
+                includingPropertiesForKeys: [.isDirectoryKey, .isHiddenKey]
+            )
+
+            for file in files {
+                let values = try file.resourceValues(forKeys: [.isDirectoryKey, .isHiddenKey])
+                if values.isDirectory == true || values.isHidden == true { continue }
+                if file.lastPathComponent.hasPrefix("~$") { continue }
+
+                let moved = try DestinationMover.move(file, into: root)
+                logStore.append("Recovered legacy failed file for retry: \(moved.lastPathComponent)", createdAt: now)
+            }
+        }
     }
 
     private func watchRoot(for fileURL: URL, config: AppConfig) -> URL {
