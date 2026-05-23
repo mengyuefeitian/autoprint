@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 struct PrintLogEntry: Identifiable, Equatable {
@@ -6,14 +7,29 @@ struct PrintLogEntry: Identifiable, Equatable {
     let message: String
 }
 
-final class PrintLogStore {
-    private(set) var entries: [PrintLogEntry] = []
+final class PrintLogStore: ObservableObject {
+    static let shared = PrintLogStore()
+
+    @Published private(set) var entries: [PrintLogEntry] = []
+
+    private let limit = 200
 
     func append(_ message: String, createdAt: Date = Date()) {
-        entries.append(PrintLogEntry(id: UUID(), createdAt: createdAt, message: message))
+        DispatchQueue.main.async {
+            self.appendOnMain(message, createdAt: createdAt)
+        }
     }
 
     func removeAll() {
-        entries.removeAll()
+        DispatchQueue.main.async {
+            self.entries.removeAll()
+        }
+    }
+
+    private func appendOnMain(_ message: String, createdAt: Date) {
+        entries.append(PrintLogEntry(id: UUID(), createdAt: createdAt, message: message))
+        if entries.count > limit {
+            entries.removeFirst(entries.count - limit)
+        }
     }
 }

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LogsView: View {
     let language: AppLanguage
+    @ObservedObject private var logStore = PrintLogStore.shared
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -9,8 +10,20 @@ struct LogsView: View {
                 .font(.title3)
                 .fontWeight(.semibold)
 
-            Text(text(.noPrintLogsYet))
-                .foregroundStyle(.secondary)
+            if logStore.entries.isEmpty {
+                Text(text(.noPrintLogsYet))
+                    .foregroundStyle(.secondary)
+            } else {
+                List(logStore.entries.reversed()) { entry in
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(entry.message)
+                        Text(entry.createdAt.formatted(date: .omitted, time: .standard))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
 
             Spacer()
         }

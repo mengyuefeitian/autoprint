@@ -10,7 +10,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-        statusItem?.button?.title = "Auto Print"
+        configureStatusItemIcon()
         AutoPrintEngine.shared.start()
 
         let menu = NSMenu()
@@ -82,6 +82,21 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
 
     private func text(_ key: L10nKey, language: AppLanguage) -> String {
         L10n.text(key, language: language)
+    }
+
+    private func configureStatusItemIcon() {
+        statusItem?.button?.title = ""
+        statusItem?.button?.toolTip = "AutoPrint"
+
+        guard let iconURL = Bundle.main.url(forResource: "AutoPrint", withExtension: "icns"),
+              let image = NSImage(contentsOf: iconURL) else {
+            statusItem?.button?.title = "AP"
+            return
+        }
+
+        image.size = NSSize(width: 18, height: 18)
+        statusItem?.button?.image = image
+        statusItem?.button?.imagePosition = .imageOnly
     }
 }
 

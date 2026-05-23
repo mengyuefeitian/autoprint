@@ -10,6 +10,7 @@ RW_DMG="$ROOT/dist/AutoPrint-$VERSION-local-rw.dmg"
 STAGING="$ROOT/dist/dmg-staging"
 MOUNT_POINT="$ROOT/dist/dmg-mount"
 BACKGROUND="$STAGING/.background/background.png"
+ARROW_SOURCE="/Users/xiaoan/Downloads/拖入.png"
 
 if [[ ! -d "$APP" ]]; then
   echo "Missing app bundle: $APP" >&2
@@ -35,10 +36,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
-swift - "$BACKGROUND" <<'SWIFT'
+swift - "$BACKGROUND" "$ARROW_SOURCE" <<'SWIFT'
 import AppKit
 
 let output = CommandLine.arguments[1]
+let arrowSource = CommandLine.arguments[2]
 let size = NSSize(width: 640, height: 420)
 let image = NSImage(size: size)
 image.lockFocus()
@@ -59,17 +61,21 @@ let subtitleAttributes: [NSAttributedString.Key: Any] = [
 (title as NSString).draw(at: NSPoint(x: 218, y: 322), withAttributes: titleAttributes)
 (subtitle as NSString).draw(at: NSPoint(x: 205, y: 294), withAttributes: subtitleAttributes)
 
-let arrow = NSBezierPath()
-arrow.lineWidth = 8
-arrow.lineCapStyle = .round
-arrow.lineJoinStyle = .round
-arrow.move(to: NSPoint(x: 244, y: 206))
-arrow.curve(to: NSPoint(x: 397, y: 206), controlPoint1: NSPoint(x: 290, y: 260), controlPoint2: NSPoint(x: 350, y: 260))
-arrow.move(to: NSPoint(x: 365, y: 238))
-arrow.line(to: NSPoint(x: 399, y: 206))
-arrow.line(to: NSPoint(x: 358, y: 184))
-NSColor(calibratedRed: 0.14, green: 0.48, blue: 0.36, alpha: 0.9).setStroke()
-arrow.stroke()
+if let arrowImage = NSImage(contentsOfFile: arrowSource) {
+    arrowImage.draw(in: NSRect(x: 270, y: 150, width: 116, height: 116), from: .zero, operation: .sourceOver, fraction: 0.92)
+} else {
+    let arrow = NSBezierPath()
+    arrow.lineWidth = 8
+    arrow.lineCapStyle = .round
+    arrow.lineJoinStyle = .round
+    arrow.move(to: NSPoint(x: 244, y: 206))
+    arrow.curve(to: NSPoint(x: 397, y: 206), controlPoint1: NSPoint(x: 290, y: 260), controlPoint2: NSPoint(x: 350, y: 260))
+    arrow.move(to: NSPoint(x: 365, y: 238))
+    arrow.line(to: NSPoint(x: 399, y: 206))
+    arrow.line(to: NSPoint(x: 358, y: 184))
+    NSColor(calibratedRed: 0.14, green: 0.48, blue: 0.36, alpha: 0.9).setStroke()
+    arrow.stroke()
+}
 
 let hintAttributes: [NSAttributedString.Key: Any] = [
     .font: NSFont.systemFont(ofSize: 13, weight: .regular),

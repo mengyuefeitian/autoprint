@@ -7,14 +7,14 @@ final class AutoPrintEngine {
     private let printer: PrintAdapter
     private let stabilityTracker: FileStabilityTracker
     private let logStore: PrintLogStore
-    private var timer: Timer?
+    private var timer: DispatchSourceTimer?
     private var isProcessing = false
 
     init(
         scanner: FileScanning = FileScanner(),
         printer: PrintAdapter = MacPrintAdapter(),
         stabilityTracker: FileStabilityTracker = FileStabilityTracker(stableSeconds: AppConfig.defaultValue.fileStableSeconds),
-        logStore: PrintLogStore = PrintLogStore()
+        logStore: PrintLogStore = .shared
     ) {
         self.scanner = scanner
         self.printer = printer
@@ -24,21 +24,36 @@ final class AutoPrintEngine {
 
     func start() {
         stop()
+        logStore.append("AutoPrint engine started")
         scheduleTimer()
         Task { await runCurrentConfiguration() }
     }
 
     func stop() {
-        timer?.invalidate()
+        timer?.cancel()
         timer = nil
+        logStore.append("AutoPrint engine stopped")
     }
 
     func processOnce(config: AppConfig, now: Date = Date()) async throws {
-        guard config.autoPrintEnabled, !config.printerName.isEmpty else {
+        guard config.autoPrintEnabled else {
+            logStore.append("Auto print skipped: automatic printing is paused", createdAt: now)
+            return
+        }
+
+        guard !config.printerName.isEmpty else {
+            logStore.append("Auto print skipped: no printer selected", createdAt: now)
+            return
+        }
+
+        guard config.watchFolders.contains(where: \.enabled) else {
+            logStore.append("Auto print skipped: no enabled watch folders", createdAt: now)
             return
         }
 
         let files = try scanner.scan(config: config)
+        logStore.append("Scanned \(config.watchFolders.filter(\.enabled).count) folder(s), found \(files.count) file(s)", createdAt: now)
+
         for file in files {
             guard stabilityTracker.isStable(
                 url: file.url,
@@ -46,6 +61,7 @@ final class AutoPrintEngine {
                 modifiedAt: file.modifiedAt,
                 now: now
             ) else {
+                logStore.append("Waiting for file to become stable: \(file.fileName)", createdAt: now)
                 continue
             }
 
@@ -55,9 +71,14 @@ final class AutoPrintEngine {
 
     private func scheduleTimer() {
         let interval = max(TimeInterval(AppConfigStore.shared.config.scanIntervalSeconds), 5)
-        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+        let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .utility))
+        timer.schedule(deadline: .now() + interval, repeating: interval)
+        timer.setEventHandler { [weak self] in
             Task { await self?.runCurrentConfiguration() }
         }
+        timer.resume()
+        self.timer = timer
+        logStore.append("AutoPrint scan interval: \(Int(interval)) seconds")
     }
 
     private func runCurrentConfiguration() async {
