@@ -1,12 +1,12 @@
 import Foundation
 
 protocol PrintAdapter {
-    func print(file: URL, printerName: String, timeoutSeconds: Int) async throws
+    func print(file: URL, printerName: String, printSettings: PrintSettings, timeoutSeconds: Int) async throws
 }
 
 extension PrintAdapter {
-    func print(file: URL, printerName: String, printSettings: PrintSettings, timeoutSeconds: Int) async throws {
-        try await print(file: file, printerName: printerName, timeoutSeconds: timeoutSeconds)
+    func print(file: URL, printerName: String, timeoutSeconds: Int) async throws {
+        try await print(file: file, printerName: printerName, printSettings: .defaultValue, timeoutSeconds: timeoutSeconds)
     }
 }
 

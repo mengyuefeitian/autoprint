@@ -11,6 +11,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         statusItem?.button?.title = "Auto Print"
+        AutoPrintEngine.shared.start()
 
         let menu = NSMenu()
         menu.delegate = self
@@ -66,6 +67,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     }
 
     @objc private func quit() {
+        AutoPrintEngine.shared.stop()
         NSApp.terminate(nil)
     }
 

@@ -1,5 +1,9 @@
 import Foundation
 
+protocol FileScanning {
+    func scan(config: AppConfig) throws -> [DiscoveredFile]
+}
+
 struct DiscoveredFile: Equatable {
     let url: URL
     let fileName: String
@@ -8,7 +12,7 @@ struct DiscoveredFile: Equatable {
     let size: UInt64
 }
 
-final class FileScanner {
+final class FileScanner: FileScanning {
     func scan(config: AppConfig) throws -> [DiscoveredFile] {
         let manager = FileManager.default
         var files: [DiscoveredFile] = []
