@@ -25,28 +25,47 @@ final class MacPrintAdapter: PrintAdapter {
                 timeoutSeconds: timeoutSeconds
             )
         case "doc", "docx", "xls", "xlsx", "ppt", "pptx":
-            try await printWithLibreOffice(file: file, printerName: cupsPrinterName, timeoutSeconds: timeoutSeconds)
+            try await printOfficeDocument(file: file, printerName: cupsPrinterName, timeoutSeconds: timeoutSeconds)
         default:
             throw PrintAdapterError.unsupportedType(fileExtension)
         }
     }
 
-    private func printWithLibreOffice(file: URL, printerName: String, timeoutSeconds: Int) async throws {
-        let candidates = [
-            "/Applications/LibreOffice.app/Contents/MacOS/soffice",
-            "/opt/homebrew/bin/libreoffice",
-            "/usr/local/bin/libreoffice"
-        ]
-
-        guard let command = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
-            throw PrintAdapterError.commandFailed("LibreOffice is not installed or not executable")
+    private func printOfficeDocument(file: URL, printerName: String, timeoutSeconds: Int) async throws {
+        guard let app = MacOfficePrintAppDetector.selectApp(forExtension: file.pathExtension.lowercased()) else {
+            throw PrintAdapterError.commandFailed("No supported Office print app found. Install Microsoft Word, Pages, or LibreOffice.")
         }
 
+        switch app {
+        case .microsoftWord:
+            try await runAppleScript(
+                MacOfficePrintScripts.microsoftWord(filePath: file.path),
+                sourceFile: file,
+                timeoutSeconds: timeoutSeconds
+            )
+        case .pages:
+            try await runAppleScript(
+                MacOfficePrintScripts.pages(filePath: file.path),
+                sourceFile: file,
+                timeoutSeconds: timeoutSeconds
+            )
+        case .libreOffice(let command):
+            try await run(
+                command,
+                arguments: ["--headless", "--pt", printerName, file.path],
+                sourceFile: file,
+                submittedFile: file,
+                timeoutSeconds: timeoutSeconds
+            )
+        }
+    }
+
+    private func runAppleScript(_ script: String, sourceFile: URL, timeoutSeconds: Int) async throws {
         try await run(
-            command,
-            arguments: ["--headless", "--pt", printerName, file.path],
-            sourceFile: file,
-            submittedFile: file,
+            "/usr/bin/osascript",
+            arguments: ["-e", script],
+            sourceFile: sourceFile,
+            submittedFile: sourceFile,
             timeoutSeconds: timeoutSeconds
         )
     }
@@ -155,6 +174,80 @@ enum MacPrintSpooler {
         let destination = directory.appendingPathComponent("document\(extensionPart)")
         try manager.copyItem(at: source, to: destination)
         return MacPrintSpoolFile(directory: directory, file: destination)
+    }
+}
+
+enum MacOfficePrintApp: Equatable {
+    case microsoftWord
+    case pages
+    case libreOffice(String)
+}
+
+enum MacOfficePrintAppDetector {
+    static func selectApp(forExtension fileExtension: String) -> MacOfficePrintApp? {
+        selectApp(
+            forExtension: fileExtension,
+            fileExists: FileManager.default.fileExists(atPath:),
+            executableExists: FileManager.default.isExecutableFile(atPath:)
+        )
+    }
+
+    static func selectApp(
+        forExtension fileExtension: String,
+        fileExists: (String) -> Bool,
+        executableExists: (String) -> Bool
+    ) -> MacOfficePrintApp? {
+        if ["doc", "docx"].contains(fileExtension), fileExists("/Applications/Microsoft Word.app") {
+            return .microsoftWord
+        }
+
+        if ["doc", "docx"].contains(fileExtension), fileExists("/Applications/Pages.app") {
+            return .pages
+        }
+
+        let libreOfficeCandidates = [
+            "/Applications/LibreOffice.app/Contents/MacOS/soffice",
+            "/opt/homebrew/bin/libreoffice",
+            "/usr/local/bin/libreoffice"
+        ]
+
+        if let command = libreOfficeCandidates.first(where: executableExists) {
+            return .libreOffice(command)
+        }
+
+        return nil
+    }
+}
+
+enum MacOfficePrintScripts {
+    static func microsoftWord(filePath: String) -> String {
+        """
+        set docPath to "\(appleScriptEscaped(filePath))"
+        tell application "Microsoft Word"
+            open POSIX file docPath
+            set printedDocument to active document
+            print out printedDocument
+            close printedDocument saving no
+        end tell
+        """
+    }
+
+    static func pages(filePath: String) -> String {
+        """
+        set docPath to "\(appleScriptEscaped(filePath))"
+        tell application "Pages"
+            open POSIX file docPath
+            set printedDocument to front document
+            print printedDocument without print dialog
+            close printedDocument saving no
+        end tell
+        """
+    }
+
+    private static func appleScriptEscaped(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
     }
 }
 
