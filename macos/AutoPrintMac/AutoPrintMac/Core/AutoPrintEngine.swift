@@ -99,12 +99,11 @@ final class AutoPrintEngine {
     private func printAndMove(file: DiscoveredFile, config: AppConfig) async throws {
         let root = watchRoot(for: file.url, config: config)
         let printedDirectory = root.appendingPathComponent(config.printedFolderName)
-        let failedDirectory = root.appendingPathComponent(config.failedFolderName)
 
         var lastError: Error?
         let attempts = max(config.maxRetries, 0) + 1
 
-        for _ in 0..<attempts {
+        for attemptIndex in 0..<attempts {
             do {
                 try await printer.print(
                     file: file.url,
@@ -117,11 +116,15 @@ final class AutoPrintEngine {
                 return
             } catch {
                 lastError = error
+                logStore.append(
+                    "Print attempt \(attemptIndex + 1)/\(attempts) failed for \(file.fileName): \(error.localizedDescription)"
+                )
             }
         }
 
-        let moved = try DestinationMover.move(file.url, into: failedDirectory)
-        logStore.append("Failed \(file.fileName) -> \(moved.path): \(lastError?.localizedDescription ?? "Unknown error")")
+        logStore.append(
+            "Print failed; kept \(file.fileName) in the watch folder for retry. Last error: \(lastError?.localizedDescription ?? "Unknown error")"
+        )
     }
 
     private func watchRoot(for fileURL: URL, config: AppConfig) -> URL {

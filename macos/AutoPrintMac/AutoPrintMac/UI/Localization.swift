@@ -59,6 +59,7 @@ enum L10nKey {
     case actualSize
     case printSettingsHint
     case noPrintLogsYet
+    case copyLogs
     case printers
     case printerCapabilityMessage
     case pdfFiles
@@ -157,6 +158,8 @@ enum L10n {
         case (.printSettingsHint, .english): return "PDF and images use these settings first; Office documents depend on local Office or LibreOffice support."
         case (.noPrintLogsYet, .chinese): return "暂无打印日志。"
         case (.noPrintLogsYet, .english): return "No print logs yet."
+        case (.copyLogs, .chinese): return "复制日志"
+        case (.copyLogs, .english): return "Copy logs"
         case (.printers, .chinese): return "打印机"
         case (.printers, .english): return "Printers"
         case (.printerCapabilityMessage, .chinese): return "选择打印机后，应用会使用配置的打印机名称提交任务。"
