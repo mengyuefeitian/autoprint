@@ -225,17 +225,18 @@ enum MacPrintSpooler {
             let baseName = source.deletingPathExtension().lastPathComponent
             return MacPrintSpoolFile(directory: directory, file: uniquePDFURL(in: directory, baseName: baseName))
         case .libreOffice:
-            return try temporaryPDFDestination()
+            return try temporaryPDFDestination(for: source)
         }
     }
 
-    private static func temporaryPDFDestination() throws -> MacPrintSpoolFile {
+    private static func temporaryPDFDestination(for source: URL) throws -> MacPrintSpoolFile {
         let manager = FileManager.default
         let directory = manager.temporaryDirectory
             .appendingPathComponent("AutoPrintConvertedPDF", isDirectory: true)
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         try manager.createDirectory(at: directory, withIntermediateDirectories: true)
-        return MacPrintSpoolFile(directory: directory, file: directory.appendingPathComponent("document.pdf"))
+        let baseName = source.deletingPathExtension().lastPathComponent
+        return MacPrintSpoolFile(directory: directory, file: directory.appendingPathComponent("\(baseName).pdf"))
     }
 
     private static func uniquePDFURL(in directory: URL, baseName: String) -> URL {

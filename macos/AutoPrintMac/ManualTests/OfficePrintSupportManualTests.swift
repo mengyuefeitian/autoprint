@@ -72,8 +72,9 @@ struct OfficePrintSupportManualTests {
         let wordPDF = try MacPrintSpooler.pdfDestination(for: URL(fileURLWithPath: "/tmp/source.docx"), app: .microsoftWord)
         expect(wordPDF.file.path == "/tmp/source.pdf", "Word conversion writes PDF next to source document")
 
-        let libreOfficePDF = try MacPrintSpooler.pdfDestination(for: URL(fileURLWithPath: "/tmp/source.docx"), app: .libreOffice("/tmp/soffice"))
-        expect(libreOfficePDF.file.lastPathComponent == "document.pdf", "LibreOffice conversion uses temporary PDF destination")
+        let libreOfficePDF = try MacPrintSpooler.pdfDestination(for: URL(fileURLWithPath: "/tmp/入党申请2026052315.docx"), app: .libreOffice("/tmp/soffice"))
+        expect(libreOfficePDF.file.lastPathComponent == "入党申请2026052315.pdf", "LibreOffice conversion expects LibreOffice output filename")
+        expect(libreOfficePDF.directory.path.contains("AutoPrintConvertedPDF"), "LibreOffice conversion still uses a temporary directory")
 
         print("OfficePrintSupportManualTests passed")
     }
