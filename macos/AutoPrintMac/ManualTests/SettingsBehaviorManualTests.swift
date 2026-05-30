@@ -21,6 +21,13 @@ struct SettingsBehaviorManualTests {
 
         store.removeWatchFolder(path: "/tmp/PrintInbox")
         expect(store.config.watchFolders.isEmpty, "watch folder is removed")
+        expect(store.config.scanSchedule == .defaultValue, "scan schedule defaults to unrestricted scanning")
+
+        store.config.scanSchedule = ScanSchedule(enabled: true, startMinuteOfDay: 8 * 60, endMinuteOfDay: 18 * 60)
+        let reloaded = AppConfigStore(defaults: defaults)
+        expect(reloaded.config.scanSchedule.enabled == true, "scan schedule enabled flag is persisted")
+        expect(reloaded.config.scanSchedule.startMinuteOfDay == 8 * 60, "scan schedule start time is persisted")
+        expect(reloaded.config.scanSchedule.endMinuteOfDay == 18 * 60, "scan schedule end time is persisted")
 
         expect(L10n.text(.openSettings, language: .chinese) == "打开设置", "Chinese menu settings title")
         expect(L10n.text(.pausePrinting, language: .english) == "Pause Printing", "English pause title")

@@ -38,6 +38,12 @@ struct StatusView: View {
                 }
 
                 GridRow {
+                    Text(text(.scanTimeRange))
+                        .foregroundStyle(.secondary)
+                    Text(scanTimeRange)
+                }
+
+                GridRow {
                     Text(text(.version))
                         .foregroundStyle(.secondary)
                     Text(AppVersion.current)
@@ -59,6 +65,19 @@ struct StatusView: View {
 
     private var printerName: String {
         config.printerName.isEmpty ? text(.defaultPrinter) : config.printerName
+    }
+
+    private var scanTimeRange: String {
+        guard config.scanSchedule.enabled else {
+            return text(.unrestricted)
+        }
+
+        return "\(formatMinute(config.scanSchedule.startMinuteOfDay)) - \(formatMinute(config.scanSchedule.endMinuteOfDay))"
+    }
+
+    private func formatMinute(_ minute: Int) -> String {
+        let clamped = min(max(minute, 0), (24 * 60) - 1)
+        return String(format: "%02d:%02d", clamped / 60, clamped % 60)
     }
 
     private func text(_ key: L10nKey) -> String {

@@ -2,9 +2,11 @@ import Foundation
 
 private final class FakeScanner: FileScanning {
     var files: [DiscoveredFile] = []
+    private(set) var scanCount = 0
 
     func scan(config: AppConfig) throws -> [DiscoveredFile] {
-        files
+        scanCount += 1
+        return files
     }
 }
 
@@ -46,7 +48,8 @@ struct AutoPrintEngineManualTests {
             printedFolderName: "printed",
             failedFolderName: "failed",
             launchAtLogin: false,
-            autoPrintEnabled: true
+            autoPrintEnabled: true,
+            scanSchedule: .defaultValue
         )
 
         let scanner = FakeScanner()
@@ -62,6 +65,34 @@ struct AutoPrintEngineManualTests {
         expect(printer.printedFiles == [source], "stable file is printed")
         expect(!FileManager.default.fileExists(atPath: source.path), "printed source is moved")
         expect(FileManager.default.fileExists(atPath: root.appendingPathComponent("printed/invoice.pdf").path), "printed file moves to printed folder")
+
+        var scheduledConfig = config
+        scheduledConfig.scanSchedule = ScanSchedule(
+            enabled: true,
+            startMinuteOfDay: 9 * 60,
+            endMinuteOfDay: 17 * 60
+        )
+
+        let scheduledScanner = FakeScanner()
+        let scheduledPrinter = FakePrinter()
+        let scheduledEngine = AutoPrintEngine(scanner: scheduledScanner, printer: scheduledPrinter)
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        try await scheduledEngine.processOnce(
+            config: scheduledConfig,
+            now: Date(timeIntervalSince1970: 20 * 60 * 60),
+            calendar: calendar
+        )
+        expect(scheduledScanner.scanCount == 0, "outside scan schedule does not scan folders")
+        expect(scheduledPrinter.printedFiles.isEmpty, "outside scan schedule does not print")
+
+        try await scheduledEngine.processOnce(
+            config: scheduledConfig,
+            now: Date(timeIntervalSince1970: 10 * 60 * 60),
+            calendar: calendar
+        )
+        expect(scheduledScanner.scanCount == 1, "inside scan schedule scans folders")
 
         print("AutoPrintEngineManualTests passed")
     }

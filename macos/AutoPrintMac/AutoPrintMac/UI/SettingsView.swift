@@ -149,6 +149,28 @@ struct SettingsView: View {
                 step: 5
             )
 
+            Section(text(.scanTimeRange)) {
+                Toggle(text(.limitScanTimeRange), isOn: $configStore.config.scanSchedule.enabled)
+
+                DatePicker(
+                    text(.scanStartTime),
+                    selection: scanTimeBinding(\.startMinuteOfDay),
+                    displayedComponents: .hourAndMinute
+                )
+                .disabled(!configStore.config.scanSchedule.enabled)
+
+                DatePicker(
+                    text(.scanEndTime),
+                    selection: scanTimeBinding(\.endMinuteOfDay),
+                    displayedComponents: .hourAndMinute
+                )
+                .disabled(!configStore.config.scanSchedule.enabled)
+
+                Text(text(.scanTimeRangeHint))
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             Stepper(
                 "\(text(.stableWait)): \(configStore.config.fileStableSeconds) \(text(.seconds))",
                 value: $configStore.config.fileStableSeconds,
@@ -197,5 +219,28 @@ struct SettingsView: View {
         }
 
         configStore.addWatchFolder(path: url.path)
+    }
+
+    private func scanTimeBinding(_ keyPath: WritableKeyPath<ScanSchedule, Int>) -> Binding<Date> {
+        Binding(
+            get: {
+                dateForMinuteOfDay(configStore.config.scanSchedule[keyPath: keyPath])
+            },
+            set: { date in
+                configStore.config.scanSchedule[keyPath: keyPath] = minuteOfDay(from: date)
+            }
+        )
+    }
+
+    private func dateForMinuteOfDay(_ minute: Int) -> Date {
+        var components = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        components.hour = min(max(minute / 60, 0), 23)
+        components.minute = min(max(minute % 60, 0), 59)
+        return Calendar.current.date(from: components) ?? Date()
+    }
+
+    private func minuteOfDay(from date: Date) -> Int {
+        let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+        return ((components.hour ?? 0) * 60) + (components.minute ?? 0)
     }
 }

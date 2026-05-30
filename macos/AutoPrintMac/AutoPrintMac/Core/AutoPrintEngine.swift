@@ -9,6 +9,8 @@ final class AutoPrintEngine {
     private let logStore: PrintLogStore
     private var timer: DispatchSourceTimer?
     private var isProcessing = false
+    private var configObserver: NSObjectProtocol?
+    private var scanningActivity: NSObjectProtocol?
 
     init(
         scanner: FileScanning = FileScanner(),
@@ -25,19 +27,36 @@ final class AutoPrintEngine {
     func start() {
         stop()
         logStore.append("AutoPrint engine started")
-        scheduleTimer()
+        beginScanningActivity()
+        observeConfigChanges()
+        scheduleTimer(runImmediately: true)
+    }
+
+    func reloadSchedule() {
+        scheduleTimer(runImmediately: true)
+        logStore.append("AutoPrint schedule reloaded")
         Task { await runCurrentConfiguration() }
     }
 
     func stop() {
         timer?.cancel()
         timer = nil
+        if let configObserver {
+            NotificationCenter.default.removeObserver(configObserver)
+            self.configObserver = nil
+        }
+        endScanningActivity()
         logStore.append("AutoPrint engine stopped")
     }
 
-    func processOnce(config: AppConfig, now: Date = Date()) async throws {
+    func processOnce(config: AppConfig, now: Date = Date(), calendar: Calendar = .current) async throws {
         guard config.autoPrintEnabled else {
             logStore.append("Auto print skipped: automatic printing is paused", createdAt: now)
+            return
+        }
+
+        guard config.scanSchedule.allowsScanning(at: now, calendar: calendar) else {
+            logStore.append("Auto print skipped: outside configured scan time range", createdAt: now)
             return
         }
 
@@ -71,10 +90,11 @@ final class AutoPrintEngine {
         }
     }
 
-    private func scheduleTimer() {
+    private func scheduleTimer(runImmediately: Bool = false) {
         let interval = max(TimeInterval(AppConfigStore.shared.config.scanIntervalSeconds), 5)
+        timer?.cancel()
         let timer = DispatchSource.makeTimerSource(queue: DispatchQueue.global(qos: .utility))
-        timer.schedule(deadline: .now() + interval, repeating: interval)
+        timer.schedule(deadline: .now() + (runImmediately ? 0 : interval), repeating: interval)
         timer.setEventHandler { [weak self] in
             Task { await self?.runCurrentConfiguration() }
         }
@@ -96,6 +116,34 @@ final class AutoPrintEngine {
         } catch {
             logStore.append("Auto print scan failed: \(error.localizedDescription)")
         }
+    }
+
+    private func observeConfigChanges() {
+        guard configObserver == nil else { return }
+
+        configObserver = NotificationCenter.default.addObserver(
+            forName: .appConfigDidChange,
+            object: nil,
+            queue: nil
+        ) { [weak self] _ in
+            self?.scheduleTimer(runImmediately: true)
+        }
+    }
+
+    private func beginScanningActivity() {
+        guard scanningActivity == nil else { return }
+
+        scanningActivity = ProcessInfo.processInfo.beginActivity(
+            options: [.userInitiatedAllowingIdleSystemSleep, .suddenTerminationDisabled],
+            reason: "AutoPrint scheduled folder scanning"
+        )
+    }
+
+    private func endScanningActivity() {
+        guard let scanningActivity else { return }
+
+        ProcessInfo.processInfo.endActivity(scanningActivity)
+        self.scanningActivity = nil
     }
 
     private func printAndMove(file: DiscoveredFile, config: AppConfig, now: Date) async throws {

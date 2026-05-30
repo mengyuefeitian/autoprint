@@ -2,37 +2,37 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>en</string>
-    <key>CFBundleExecutable</key>
-    <string>AutoPrintMac</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.autoprint.mac</string>
-    <key>CFBundleIconFile</key>
-    <string>AutoPrint</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>AutoPrint</string>
-    <key>CFBundleDisplayName</key>
-    <string>AutoPrint</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.1.18</string>
-    <key>CFBundleVersion</key>
-    <string>19</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
-    <key>LSUIElement</key>
-    <true/>
-    <key>NSPrincipalClass</key>
-    <string>NSApplication</string>
-    <key>NSDocumentsFolderUsageDescription</key>
-    <string>AutoPrint needs access to folders you choose so it can scan files and submit them to your local printer.</string>
-    <key>NSDesktopFolderUsageDescription</key>
-    <string>AutoPrint needs access to folders you choose so it can scan files and submit them to your local printer.</string>
-    <key>NSDownloadsFolderUsageDescription</key>
-    <string>AutoPrint needs access to folders you choose so it can scan files and submit them to your local printer.</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>AutoPrint</string>
+	<key>CFBundleExecutable</key>
+	<string>AutoPrintMac</string>
+	<key>CFBundleIconFile</key>
+	<string>AutoPrint</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.autoprint.mac</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>AutoPrint</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.1.19</string>
+	<key>CFBundleVersion</key>
+	<string>20</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSDesktopFolderUsageDescription</key>
+	<string>AutoPrint needs access to folders you choose so it can scan files and submit them to your local printer.</string>
+	<key>NSDocumentsFolderUsageDescription</key>
+	<string>AutoPrint needs access to folders you choose so it can scan files and submit them to your local printer.</string>
+	<key>NSDownloadsFolderUsageDescription</key>
+	<string>AutoPrint needs access to folders you choose so it can scan files and submit them to your local printer.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
 </dict>
 </plist>

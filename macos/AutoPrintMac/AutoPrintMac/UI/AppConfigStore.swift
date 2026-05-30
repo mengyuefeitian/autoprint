@@ -1,11 +1,16 @@
 import Foundation
 
+extension Notification.Name {
+    static let appConfigDidChange = Notification.Name("AutoPrintMac.appConfigDidChange")
+}
+
 final class AppConfigStore: ObservableObject {
     static let shared = AppConfigStore()
 
     @Published var config: AppConfig {
         didSet {
             save(config)
+            NotificationCenter.default.post(name: .appConfigDidChange, object: self)
         }
     }
 
@@ -110,7 +115,8 @@ private struct LegacyAppConfig: Codable {
             printedFolderName: printedFolderName,
             failedFolderName: failedFolderName,
             launchAtLogin: launchAtLogin,
-            autoPrintEnabled: autoPrintEnabled
+            autoPrintEnabled: autoPrintEnabled,
+            scanSchedule: .defaultValue
         )
     }
 }
