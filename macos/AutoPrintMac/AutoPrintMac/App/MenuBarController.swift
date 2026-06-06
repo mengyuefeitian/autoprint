@@ -4,6 +4,7 @@ import SwiftUI
 final class MenuBarController: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem?
     private var settingsMenuItem: NSMenuItem?
+    private var logsMenuItem: NSMenuItem?
     private var pauseMenuItem: NSMenuItem?
     private var quitMenuItem: NSMenuItem?
     private var settingsWindow: NSWindow?
@@ -19,6 +20,11 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         settingsItem.target = self
         menu.addItem(settingsItem)
         settingsMenuItem = settingsItem
+
+        let logsItem = NSMenuItem(title: "", action: #selector(openLogDirectory), keyEquivalent: "l")
+        logsItem.target = self
+        menu.addItem(logsItem)
+        logsMenuItem = logsItem
 
         let pauseItem = NSMenuItem(title: "", action: #selector(togglePrinting), keyEquivalent: "p")
         pauseItem.target = self
@@ -66,6 +72,12 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         updateMenuTitles()
     }
 
+    @objc private func openLogDirectory() {
+        let directory = PrintLogStore.shared.logDirectory
+        try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        NSWorkspace.shared.open(directory)
+    }
+
     @objc private func quit() {
         AutoPrintEngine.shared.stop()
         NSApp.terminate(nil)
@@ -75,6 +87,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         let language = AppConfigStore.shared.language
         let enabled = AppConfigStore.shared.config.autoPrintEnabled
         settingsMenuItem?.title = text(.openSettings, language: language)
+        logsMenuItem?.title = text(.openLogDirectory, language: language)
         pauseMenuItem?.title = enabled ? text(.pausePrinting, language: language) : text(.resumePrinting, language: language)
         pauseMenuItem?.state = enabled ? .off : .on
         quitMenuItem?.title = text(.quit, language: language)

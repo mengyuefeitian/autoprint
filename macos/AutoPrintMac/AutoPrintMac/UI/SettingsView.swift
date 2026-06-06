@@ -193,7 +193,7 @@ struct SettingsView: View {
 
     private func addWatchFolder() {
         let panel = NSOpenPanel()
-        panel.canChooseFiles = true
+        panel.canChooseFiles = false
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = true
@@ -213,8 +213,8 @@ struct SettingsView: View {
     }
 
     private func addWatchFolder(url: URL) {
-        let values = try? url.resourceValues(forKeys: [.isDirectoryKey])
-        guard values?.isDirectory == true else {
+        guard WatchFolderPathValidator.acceptsDirectory(url: url) else {
+            PrintLogStore.shared.append("Watch folder selection rejected: \(url.path)")
             return
         }
 

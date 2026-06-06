@@ -35,6 +35,7 @@ enum L10nKey {
     case language
     case version
     case openSettings
+    case openLogDirectory
     case pausePrinting
     case resumePrinting
     case quit
@@ -107,6 +108,7 @@ enum L10n {
         case .language: return choose("语言", "Language", language)
         case .version: return choose("版本", "Version", language)
         case .openSettings: return choose("打开设置", "Open Settings", language)
+        case .openLogDirectory: return choose("打开日志目录", "Open log folder", language)
         case .pausePrinting: return choose("暂停打印", "Pause Printing", language)
         case .resumePrinting: return choose("恢复打印", "Resume Printing", language)
         case .quit: return choose("退出", "Quit", language)

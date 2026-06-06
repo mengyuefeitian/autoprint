@@ -21,14 +21,7 @@ fi
 rm -rf "$STAGING" "$MOUNT_POINT" "$RW_DMG" "$DMG"
 mkdir -p "$STAGING/.background"
 cp -R "$APP" "$STAGING/AutoPrint.app"
-/usr/bin/osascript <<APPLESCRIPT >/dev/null
-tell application "Finder"
-    make new alias file to POSIX file "/Applications" at POSIX file "$STAGING"
-end tell
-APPLESCRIPT
-if [[ -e "$STAGING/应用程序" ]]; then
-  mv "$STAGING/应用程序" "$STAGING/Applications"
-fi
+ln -s /Applications "$STAGING/Applications"
 
 cleanup() {
   hdiutil detach "/Volumes/AutoPrint" >/dev/null 2>&1 || true
@@ -82,7 +75,7 @@ let hintAttributes: [NSAttributedString.Key: Any] = [
     .foregroundColor: NSColor(calibratedRed: 0.43, green: 0.49, blue: 0.58, alpha: 1.0)
 ]
 if let applicationsIcon = NSImage(contentsOfFile: "/System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/ApplicationsFolderIcon.icns") {
-    applicationsIcon.draw(in: NSRect(x: 432, y: 154, width: 96, height: 96), from: .zero, operation: .sourceOver, fraction: 1.0)
+    applicationsIcon.draw(in: NSRect(x: 432, y: 166, width: 96, height: 96), from: .zero, operation: .sourceOver, fraction: 1.0)
 }
 ("AutoPrint" as NSString).draw(at: NSPoint(x: 124, y: 96), withAttributes: hintAttributes)
 ("Applications" as NSString).draw(at: NSPoint(x: 444, y: 96), withAttributes: hintAttributes)

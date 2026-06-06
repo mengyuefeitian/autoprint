@@ -192,13 +192,28 @@ final class AutoPrintEngine {
                 continue
             }
 
-            let files = try manager.contentsOfDirectory(
-                at: failedDirectory,
-                includingPropertiesForKeys: [.isDirectoryKey, .isHiddenKey]
-            )
+            let files: [URL]
+
+            do {
+                files = try manager.contentsOfDirectory(
+                    at: failedDirectory,
+                    includingPropertiesForKeys: [.isDirectoryKey, .isHiddenKey]
+                )
+            } catch {
+                logStore.append("Failed folder skipped: \(failedDirectory.path). Error: \(error.localizedDescription)", createdAt: now)
+                continue
+            }
 
             for file in files {
-                let values = try file.resourceValues(forKeys: [.isDirectoryKey, .isHiddenKey])
+                let values: URLResourceValues
+
+                do {
+                    values = try file.resourceValues(forKeys: [.isDirectoryKey, .isHiddenKey])
+                } catch {
+                    logStore.append("Failed folder item skipped: \(file.path). Error: \(error.localizedDescription)", createdAt: now)
+                    continue
+                }
+
                 if values.isDirectory == true || values.isHidden == true { continue }
                 if file.lastPathComponent.hasPrefix("~$") { continue }
 

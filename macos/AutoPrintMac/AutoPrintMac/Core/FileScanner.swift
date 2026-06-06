@@ -13,6 +13,12 @@ struct DiscoveredFile: Equatable {
 }
 
 final class FileScanner: FileScanning {
+    private let logStore: PrintLogStore?
+
+    init(logStore: PrintLogStore? = .shared) {
+        self.logStore = logStore
+    }
+
     func scan(config: AppConfig) throws -> [DiscoveredFile] {
         let manager = FileManager.default
         var files: [DiscoveredFile] = []
@@ -21,25 +27,39 @@ final class FileScanner: FileScanning {
             let root = URL(fileURLWithPath: folder.path)
             let printed = root.appendingPathComponent(config.printedFolderName).standardizedFileURL
             let failed = root.appendingPathComponent(config.failedFolderName).standardizedFileURL
-            let children = try manager.contentsOfDirectory(
-                at: root,
-                includingPropertiesForKeys: [
-                    .creationDateKey,
-                    .contentModificationDateKey,
-                    .fileSizeKey,
-                    .isDirectoryKey,
-                    .isHiddenKey
-                ]
-            )
+            let children: [URL]
+
+            do {
+                children = try manager.contentsOfDirectory(
+                    at: root,
+                    includingPropertiesForKeys: [
+                        .creationDateKey,
+                        .contentModificationDateKey,
+                        .fileSizeKey,
+                        .isDirectoryKey,
+                        .isHiddenKey
+                    ]
+                )
+            } catch {
+                logStore?.append("Watch folder skipped: \(root.path). Error: \(error.localizedDescription)")
+                continue
+            }
 
             for url in children {
-                let values = try url.resourceValues(forKeys: [
-                    .creationDateKey,
-                    .contentModificationDateKey,
-                    .fileSizeKey,
-                    .isDirectoryKey,
-                    .isHiddenKey
-                ])
+                let values: URLResourceValues
+
+                do {
+                    values = try url.resourceValues(forKeys: [
+                        .creationDateKey,
+                        .contentModificationDateKey,
+                        .fileSizeKey,
+                        .isDirectoryKey,
+                        .isHiddenKey
+                    ])
+                } catch {
+                    logStore?.append("File skipped during scan: \(url.path). Error: \(error.localizedDescription)")
+                    continue
+                }
 
                 if values.isDirectory == true || values.isHidden == true { continue }
                 if isInDirectory(url, directory: printed) || isInDirectory(url, directory: failed) { continue }
