@@ -10,10 +10,19 @@ let package = Package(
     products: [
         .executable(name: "AutoPrintMac", targets: ["AutoPrintMac"])
     ],
+    dependencies: [
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.6.0")
+    ],
     targets: [
         .executableTarget(
             name: "AutoPrintMac",
-            path: "AutoPrintMac"
+            dependencies: [
+                .product(name: "Sparkle", package: "Sparkle")
+            ],
+            path: "AutoPrintMac",
+            linkerSettings: [
+                .unsafeFlags(["-Xlinker", "-rpath", "-Xlinker", "@executable_path/../Frameworks"])
+            ]
         ),
         .testTarget(
             name: "AutoPrintMacTests",
