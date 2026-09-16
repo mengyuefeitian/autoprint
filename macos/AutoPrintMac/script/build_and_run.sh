@@ -84,10 +84,32 @@ elif ! echo 'import Combine' | swiftc -sdk "$(xcrun --show-sdk-path)" - -o /dev/
   done
 fi
 
+# Always pin an explicit deployment target matching LSMinimumSystemVersion in
+# Info.plist. Without -target, swiftc silently embeds whatever OS version the
+# *installed compiler itself* defaults to (not the SDK it's pointed at) as the
+# app's minimum required macOS version. A newer swiftc can default ahead of
+# any macOS version that has actually shipped, which makes the built app
+# refuse to launch on real machines (including the one it was built on) with
+# "requires macOS X.0 or later" -- even though nothing about the app actually
+# needs that version.
+MIN_OS_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$ROOT/Resources/Info.plist")"
+TARGET_FLAGS=(-target "arm64-apple-macosx$MIN_OS_VERSION")
+
 swiftc \
   "${SDK_FLAGS[@]}" \
+  "${TARGET_FLAGS[@]}" \
   -o "$BUILD/$EXECUTABLE" \
   $(find AutoPrintMac -name '*.swift' | sort)
+
+# Guard rail: verify the binary actually embeds the intended minimum OS
+# version, so a future toolchain change can't silently ship an app that
+# nobody's machine (including this one) can run.
+built_minos="$(otool -l "$BUILD/$EXECUTABLE" | awk '/^ *minos / { print $2; exit }')"
+if [[ "$built_minos" != "$MIN_OS_VERSION" ]]; then
+  echo "error: built binary requires macOS $built_minos, expected macOS $MIN_OS_VERSION (LSMinimumSystemVersion in Info.plist)." >&2
+  echo "This usually means -target wasn't honored by swiftc; do not ship this build." >&2
+  exit 1
+fi
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
