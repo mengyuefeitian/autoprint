@@ -131,7 +131,7 @@ rm -rf "$volume_path/.fseventsd"
 chflags hidden "$volume_path/.background" >/dev/null 2>&1 || true
 SetFile -a V "$volume_path/.background" >/dev/null 2>&1 || true
 
-osascript <<APPLESCRIPT
+osascript >/dev/null <<APPLESCRIPT
 tell application "Finder"
     set volumeAlias to POSIX file "$volume_path" as alias
     tell folder volumeAlias
@@ -163,7 +163,7 @@ SetFile -a V "$volume_path/.background" >/dev/null 2>&1 || true
 sync
 hdiutil detach "$device" >/dev/null
 hdiutil convert "$RW_DMG" -format UDZO -imagekey zlib-level=9 -o "$DMG" >/dev/null
-hdiutil verify "$DMG"
+hdiutil verify "$DMG" >&2
 trap - EXIT
 cleanup
 echo "$DMG"
