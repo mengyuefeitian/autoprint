@@ -65,6 +65,13 @@ extension Bundle {
         return self.autoPrint_localizedString(forKey: key, value: value, table: tableName)
     }
 
+    /// This swizzled hook can in principle run on any thread that touches
+    /// a bundle's localization (AppKit/Foundation/Sparkle internals), so
+    /// this is an unsynchronized read of `AppConfigStore`'s `@Published`
+    /// property -- in practice safe here because `AppLanguage` is a plain
+    /// `String`-backed enum with no associated values (see
+    /// `Localization.swift`), so a race can at worst read a value from
+    /// just before or after a language change, never a torn/invalid one.
     private static var desiredLocalizationFolderName: String? {
         SparkleLocalizationFolder.folderName(for: AppConfigStore.shared.language)
     }
