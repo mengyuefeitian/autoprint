@@ -41,7 +41,18 @@ final class UpdateService {
             updaterDelegate: nil,
             userDriverDelegate: nil
         )
-        Self.configure(controller.updater)
+        // Deliberately does NOT call `Self.configure(controller.updater)` here.
+        // `automaticallyChecksForUpdates`/`updateCheckInterval` are persisting
+        // setters on SPUUpdater — they write to user defaults. Calling
+        // `configure` unconditionally on every launch would silently
+        // re-enable automatic checks even after a user explicitly disabled
+        // them via Sparkle's own settings UI. Info.plist's
+        // SUEnableAutomaticChecks/SUScheduledCheckInterval already give
+        // Sparkle its initial/default cadence; Sparkle's own persisted
+        // defaults handle anything the user changes afterward.
+        // `configure(_:)` is kept as pure, tested logic for potential future
+        // deliberate use (e.g. a "reset to defaults" action), just not
+        // invoked here.
     }
 
     /// Manual trigger for the "Check for Updates…" menu item.

@@ -59,6 +59,17 @@ if [ -z "$MIN_SYSTEM_VERSION" ]; then
   exit 1
 fi
 
+# Sparkle compares the running app's CFBundleVersion (build number) against
+# the appcast item's <sparkle:version> to decide whether an update exists —
+# NOT against CFBundleShortVersionString (the marketing version passed as
+# $VERSION). Read the actual build number from the same built app bundle's
+# Info.plist so <sparkle:version> matches what Sparkle actually compares.
+BUILD_NUMBER="$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$APP_INFO_PLIST" 2>/dev/null || true)"
+if [ -z "$BUILD_NUMBER" ]; then
+  echo "error: CFBundleVersion not found in $APP_INFO_PLIST — ensure the app was built via 'bash script/build_and_run.sh' first" >&2
+  exit 1
+fi
+
 cat <<ITEM
 
 Paste this <item> into docs/appcast.xml, inside <channel>, above any older entries:
@@ -66,7 +77,7 @@ Paste this <item> into docs/appcast.xml, inside <channel>, above any older entri
     <item>
       <title>Version ${VERSION}</title>
       <pubDate>$(date -R)</pubDate>
-      <sparkle:version>${VERSION}</sparkle:version>
+      <sparkle:version>${BUILD_NUMBER}</sparkle:version>
       <sparkle:shortVersionString>${VERSION}</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>${MIN_SYSTEM_VERSION}</sparkle:minimumSystemVersion>
       <enclosure
