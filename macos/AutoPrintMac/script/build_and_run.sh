@@ -69,55 +69,67 @@ fi
 # a newer target than the default SDK supports), which breaks even Foundation
 # imports like Combine. If the default SDK can't compile a trivial program,
 # fall back to an older bundled SDK instead of failing the whole build.
-SDK_FLAGS=()
-if [[ -n "${AUTOPRINT_SDKROOT:-}" ]]; then
-  SDK_FLAGS=(-sdk "$AUTOPRINT_SDKROOT")
-elif ! echo 'import Combine' | swiftc -sdk "$(xcrun --show-sdk-path)" - -o /dev/null 2>/dev/null; then
+if [[ -z "${AUTOPRINT_SDKROOT:-}" ]] && ! echo 'import Combine' | swiftc -sdk "$(xcrun --show-sdk-path)" - -o /dev/null 2>/dev/null; then
   for candidate in /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk \
                    /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk \
                    /Library/Developer/CommandLineTools/SDKs/MacOSX13.sdk; do
     if [[ -d "$candidate" ]]; then
       echo "Default SDK can't build Foundation/Combine; falling back to $candidate" >&2
-      SDK_FLAGS=(-sdk "$candidate")
+      export AUTOPRINT_SDKROOT="$candidate"
       break
     fi
   done
 fi
+if [[ -n "${AUTOPRINT_SDKROOT:-}" ]]; then
+  export SDKROOT="$AUTOPRINT_SDKROOT"
+fi
 
-# Always pin an explicit deployment target matching LSMinimumSystemVersion in
-# Info.plist. Without -target, swiftc silently embeds whatever OS version the
-# *installed compiler itself* defaults to (not the SDK it's pointed at) as the
-# app's minimum required macOS version. A newer swiftc can default ahead of
-# any macOS version that has actually shipped, which makes the built app
-# refuse to launch on real machines (including the one it was built on) with
-# "requires macOS X.0 or later" -- even though nothing about the app actually
-# needs that version.
-MIN_OS_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$ROOT/Resources/Info.plist")"
-TARGET_FLAGS=(-target "arm64-apple-macosx$MIN_OS_VERSION")
-
-swiftc \
-  "${SDK_FLAGS[@]}" \
-  "${TARGET_FLAGS[@]}" \
-  -o "$BUILD/$EXECUTABLE" \
-  $(find AutoPrintMac -name '*.swift' | sort)
+# Build via SwiftPM (not raw swiftc) so Sparkle's dependency graph resolves.
+# Package.swift's `platforms: [.macOS(.v14)]` is what pins the deployment
+# target here -- swift build honors it automatically, no explicit -target
+# flag needed (verified: even under the SDKROOT fallback above, the built
+# binary correctly embeds minos 14.0).
+swift build
+BUILD_BINARY="$(swift build --show-bin-path)/$EXECUTABLE"
 
 # Guard rail: verify the binary actually embeds the intended minimum OS
 # version, so a future toolchain change can't silently ship an app that
 # nobody's machine (including this one) can run.
-built_minos="$(otool -l "$BUILD/$EXECUTABLE" | awk '/^ *minos / { print $2; exit }')"
+MIN_OS_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :LSMinimumSystemVersion' "$ROOT/Resources/Info.plist")"
+built_minos="$(otool -l "$BUILD_BINARY" | awk '/^ *minos / { print $2; exit }')"
 if [[ "$built_minos" != "$MIN_OS_VERSION" ]]; then
   echo "error: built binary requires macOS $built_minos, expected macOS $MIN_OS_VERSION (LSMinimumSystemVersion in Info.plist)." >&2
-  echo "This usually means -target wasn't honored by swiftc; do not ship this build." >&2
+  echo "Check that Package.swift's platforms: entry matches Info.plist." >&2
   exit 1
 fi
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BUILD/$EXECUTABLE" "$APP/Contents/MacOS/$EXECUTABLE"
+cp "$BUILD_BINARY" "$APP/Contents/MacOS/$EXECUTABLE"
 cp "$ROOT/Resources/Info.plist" "$APP/Contents/Info.plist"
 cp "$ICON" "$APP/Contents/Resources/AutoPrint.icns"
 
-codesign --force --sign - "$APP"
+# Embed Sparkle.framework -- this project has no Xcode project to do this
+# automatically, so the framework must be copied by hand. Package.swift's
+# linkerSettings already adds the matching @executable_path/../Frameworks
+# rpath so the binary finds it here at runtime.
+APP_FRAMEWORKS="$APP/Contents/Frameworks"
+mkdir -p "$APP_FRAMEWORKS"
+SPARKLE_FRAMEWORK="$(find "$ROOT/.build" -type d -name "Sparkle.framework" -path "*macos*" 2>/dev/null | head -n 1)"
+if [[ -z "$SPARKLE_FRAMEWORK" ]]; then
+  SPARKLE_FRAMEWORK="$(find "$ROOT/.build" -type d -name "Sparkle.framework" 2>/dev/null | head -n 1)"
+fi
+if [[ -n "$SPARKLE_FRAMEWORK" ]]; then
+  rm -rf "$APP_FRAMEWORKS/Sparkle.framework"
+  cp -R "$SPARKLE_FRAMEWORK" "$APP_FRAMEWORKS/Sparkle.framework"
+else
+  echo "error: Sparkle.framework not found under $ROOT/.build -- the app cannot launch without it. Run 'swift build' first." >&2
+  exit 1
+fi
+
+# --deep signs the nested Sparkle.framework (its Autoupdate tool, Updater.app,
+# and XPC services) along with the main bundle.
+codesign --force --deep --sign - "$APP"
 
 if [[ "${1:-}" == "--verify" ]]; then
   plutil -lint "$APP/Contents/Info.plist"
