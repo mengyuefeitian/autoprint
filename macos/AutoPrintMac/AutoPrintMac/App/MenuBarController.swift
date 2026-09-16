@@ -16,6 +16,9 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         configureStatusItemIcon()
         AutoPrintEngine.shared.start()
+        // Must run before UpdateService() below — Sparkle's own alert text
+        // resolves its language the moment its bundle is first touched.
+        Bundle.activateSparkleLanguageOverride()
         updateService = UpdateService()
 
         let menu = NSMenu()
