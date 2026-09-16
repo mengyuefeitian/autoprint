@@ -39,6 +39,7 @@ enum L10nKey {
     case pausePrinting
     case resumePrinting
     case printNow
+    case checkForUpdates
     case quit
     case addWatchFolder
     case chooseFolder
@@ -113,6 +114,7 @@ enum L10n {
         case .pausePrinting: return choose("暂停打印", "Pause Printing", language)
         case .resumePrinting: return choose("恢复打印", "Resume Printing", language)
         case .printNow: return choose("立即打印", "Print Now", language)
+        case .checkForUpdates: return choose("检查更新…", "Check for Updates…", language)
         case .quit: return choose("退出", "Quit", language)
         case .addWatchFolder: return choose("添加监听目录", "Add watch folder", language)
         case .chooseFolder: return choose("选择目录", "Choose folder", language)

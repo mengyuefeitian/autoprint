@@ -7,13 +7,16 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var logsMenuItem: NSMenuItem?
     private var pauseMenuItem: NSMenuItem?
     private var printNowMenuItem: NSMenuItem?
+    private var checkForUpdatesMenuItem: NSMenuItem?
     private var quitMenuItem: NSMenuItem?
     private var settingsWindow: NSWindow?
+    private var updateService: UpdateService?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         configureStatusItemIcon()
         AutoPrintEngine.shared.start()
+        updateService = UpdateService()
 
         let menu = NSMenu()
         menu.delegate = self
@@ -36,6 +39,11 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         printNowItem.target = self
         menu.addItem(printNowItem)
         printNowMenuItem = printNowItem
+
+        let checkForUpdatesItem = NSMenuItem(title: "", action: #selector(checkForUpdates), keyEquivalent: "u")
+        checkForUpdatesItem.target = self
+        menu.addItem(checkForUpdatesItem)
+        checkForUpdatesMenuItem = checkForUpdatesItem
         updateMenuTitles()
 
         menu.addItem(NSMenuItem.separator())
@@ -82,6 +90,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         AutoPrintEngine.shared.printNow()
     }
 
+    @MainActor @objc private func checkForUpdates() {
+        updateService?.checkForUpdates()
+    }
+
     @objc private func openLogDirectory() {
         let directory = PrintLogStore.shared.logDirectory
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -101,6 +113,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         pauseMenuItem?.title = enabled ? text(.pausePrinting, language: language) : text(.resumePrinting, language: language)
         pauseMenuItem?.state = enabled ? .off : .on
         printNowMenuItem?.title = text(.printNow, language: language)
+        checkForUpdatesMenuItem?.title = text(.checkForUpdates, language: language)
         quitMenuItem?.title = text(.quit, language: language)
     }
 
