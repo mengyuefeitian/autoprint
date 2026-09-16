@@ -26,13 +26,52 @@ final class MacPrintAdapter: PrintAdapter {
     private func printPDFOrImage(file: URL, printerName: String, printSettings: PrintSettings, timeoutSeconds: Int) async throws {
         let spool = try MacPrintSpooler.copyToLocalSpool(file)
         defer { try? FileManager.default.removeItem(at: spool.directory) }
-        try await run(
-            "/usr/bin/lp",
+        try await runPrintCommand(
             arguments: ["-d", printerName] + MacPrintOptions.lpOptions(for: printSettings) + [spool.file.path],
             sourceFile: file,
             submittedFile: spool.file,
             timeoutSeconds: timeoutSeconds
         )
+    }
+
+    /// Submits a job to CUPS via `lp` and waits for it to actually leave the print queue.
+    ///
+    /// `lp` exits 0 as soon as the job is accepted into the queue -- not once it has printed.
+    /// If we treated that as "done", a stuck/blocked printer queue would cause the source file
+    /// to be moved into the "printed" folder even though nothing was ever printed. So after
+    /// submission we parse the job id CUPS reports and poll the queue until the job is gone
+    /// (printed or otherwise removed) or the timeout elapses.
+    private func runPrintCommand(
+        arguments: [String],
+        sourceFile: URL,
+        submittedFile: URL,
+        timeoutSeconds: Int
+    ) async throws {
+        let output = try await run(
+            "/usr/bin/lp",
+            arguments: arguments,
+            sourceFile: sourceFile,
+            submittedFile: submittedFile,
+            timeoutSeconds: timeoutSeconds
+        )
+
+        guard let jobID = CUPSJobIDParser.parse(output) else {
+            // Unexpected `lp` output: fall back to the previous behavior (treat submission as
+            // success) rather than introduce a new failure mode we can't verify against.
+            return
+        }
+
+        let completed = await CUPSJobQueueWaiter.waitForCompletion(
+            jobID: jobID,
+            timeoutSeconds: timeoutSeconds,
+            isJobQueued: MacCUPSQueueStatus.isJobQueued
+        )
+
+        guard completed else {
+            throw PrintAdapterError.commandFailed(
+                "Print job \(jobID) is still in the print queue after \(timeoutSeconds)s (printer may be blocked, paused, or offline)."
+            )
+        }
     }
 
     private func printOfficeDocument(file: URL, printerName: String, printSettings: PrintSettings, timeoutSeconds: Int) async throws {
@@ -112,7 +151,8 @@ final class MacPrintAdapter: PrintAdapter {
         )
     }
 
-    private func run(_ launchPath: String, arguments: [String], sourceFile: URL?, submittedFile: URL?, timeoutSeconds: Int) async throws {
+    @discardableResult
+    private func run(_ launchPath: String, arguments: [String], sourceFile: URL?, submittedFile: URL?, timeoutSeconds: Int) async throws -> String {
         if let sourceFile, !FileManager.default.fileExists(atPath: sourceFile.path) {
             throw PrintAdapterError.commandFailed("Print source file does not exist: \(sourceFile.path)")
         }
@@ -171,6 +211,8 @@ final class MacPrintAdapter: PrintAdapter {
                 "\(launchPath) exited with status \(process.terminationStatus).\(sourceDetail)\(submittedDetail) command=\(command)\(stderrDetail)\(stdoutDetail)"
             )
         }
+
+        return String(data: standardOutput.data, encoding: .utf8) ?? ""
     }
 
     private func waitForExit(_ process: Process, timeoutSeconds: Int) async throws {

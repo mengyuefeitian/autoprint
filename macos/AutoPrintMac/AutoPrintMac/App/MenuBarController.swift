@@ -6,6 +6,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
     private var settingsMenuItem: NSMenuItem?
     private var logsMenuItem: NSMenuItem?
     private var pauseMenuItem: NSMenuItem?
+    private var printNowMenuItem: NSMenuItem?
     private var quitMenuItem: NSMenuItem?
     private var settingsWindow: NSWindow?
 
@@ -30,6 +31,11 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         pauseItem.target = self
         menu.addItem(pauseItem)
         pauseMenuItem = pauseItem
+
+        let printNowItem = NSMenuItem(title: "", action: #selector(printNow), keyEquivalent: "r")
+        printNowItem.target = self
+        menu.addItem(printNowItem)
+        printNowMenuItem = printNowItem
         updateMenuTitles()
 
         menu.addItem(NSMenuItem.separator())
@@ -72,6 +78,10 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         updateMenuTitles()
     }
 
+    @objc private func printNow() {
+        AutoPrintEngine.shared.printNow()
+    }
+
     @objc private func openLogDirectory() {
         let directory = PrintLogStore.shared.logDirectory
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -90,6 +100,7 @@ final class MenuBarController: NSObject, NSApplicationDelegate {
         logsMenuItem?.title = text(.openLogDirectory, language: language)
         pauseMenuItem?.title = enabled ? text(.pausePrinting, language: language) : text(.resumePrinting, language: language)
         pauseMenuItem?.state = enabled ? .off : .on
+        printNowMenuItem?.title = text(.printNow, language: language)
         quitMenuItem?.title = text(.quit, language: language)
     }
 

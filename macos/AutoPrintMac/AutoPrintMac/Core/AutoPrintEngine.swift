@@ -11,6 +11,7 @@ final class AutoPrintEngine {
     private var isProcessing = false
     private var configObserver: NSObjectProtocol?
     private var scanningActivity: NSObjectProtocol?
+    private var wasWithinScheduleWindow: Bool?
 
     init(
         scanner: FileScanning = FileScanner(),
@@ -32,6 +33,10 @@ final class AutoPrintEngine {
         scheduleTimer(runImmediately: true)
     }
 
+    func printNow() {
+        Task { await runManualTrigger() }
+    }
+
     func reloadSchedule() {
         scheduleTimer(runImmediately: true)
         logStore.append("AutoPrint schedule reloaded")
@@ -49,15 +54,21 @@ final class AutoPrintEngine {
         logStore.append("AutoPrint engine stopped")
     }
 
-    func processOnce(config: AppConfig, now: Date = Date(), calendar: Calendar = .current) async throws {
-        guard config.autoPrintEnabled else {
-            logStore.append("Auto print skipped: automatic printing is paused", createdAt: now)
-            return
-        }
+    func processOnce(
+        config: AppConfig,
+        now: Date = Date(),
+        calendar: Calendar = .current,
+        isManualTrigger: Bool = false
+    ) async throws {
+        if !isManualTrigger {
+            guard config.autoPrintEnabled else {
+                logStore.append("Auto print skipped: automatic printing is paused", createdAt: now)
+                return
+            }
 
-        guard config.scanSchedule.allowsScanning(at: now, calendar: calendar) else {
-            logStore.append("Auto print skipped: outside configured scan time range", createdAt: now)
-            return
+            guard logIfOutsideScheduleWindow(config: config, now: now, calendar: calendar) else {
+                return
+            }
         }
 
         guard !config.printerName.isEmpty else {
@@ -116,6 +127,38 @@ final class AutoPrintEngine {
         } catch {
             logStore.append("Auto print scan failed: \(error.localizedDescription)")
         }
+    }
+
+    private func runManualTrigger() async {
+        if isProcessing {
+            logStore.append("Print now skipped: a scan is already in progress")
+            return
+        }
+
+        isProcessing = true
+        defer { isProcessing = false }
+
+        logStore.append("Print now triggered manually")
+
+        do {
+            try await processOnce(config: AppConfigStore.shared.config, isManualTrigger: true)
+        } catch {
+            logStore.append("Print now failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Returns `true` when scanning should proceed. Logs only on transitions in/out of the
+    /// configured scan window so repeated ticks outside the window don't spam the log.
+    private func logIfOutsideScheduleWindow(config: AppConfig, now: Date, calendar: Calendar) -> Bool {
+        let isWithinWindow = config.scanSchedule.allowsScanning(at: now, calendar: calendar)
+        let didChange = wasWithinScheduleWindow != isWithinWindow
+        wasWithinScheduleWindow = isWithinWindow
+
+        if !isWithinWindow, didChange {
+            logStore.append("Auto print skipped: outside configured scan time range", createdAt: now)
+        }
+
+        return isWithinWindow
     }
 
     private func observeConfigChanges() {
