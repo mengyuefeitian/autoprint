@@ -26,6 +26,14 @@
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>SUFeedURL</key>
+	<string>https://mengyuefeitian.github.io/autoprint/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>up4l2Bq3RC8Bq5QoaxaS2Mo1jsZoSdpKjhGuoFwD4b0=</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
 	<key>NSDesktopFolderUsageDescription</key>
 	<string>AutoPrint needs access to folders you choose so it can scan files and submit them to your local printer.</string>
 	<key>NSDocumentsFolderUsageDescription</key>
