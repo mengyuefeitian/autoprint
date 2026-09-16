@@ -18,6 +18,26 @@ if [[ ! -d "$APP" ]]; then
   exit 1
 fi
 
+# See build_and_run.sh for context: fall back to an older bundled SDK if the
+# default one can't compile a trivial Foundation/Combine program (mismatched
+# local toolchain/SDK). `swift` script mode honors SDKROOT the same way
+# swiftc does. (Combine is the probe because it reliably fails on the broken
+# combo; a bare `import AppKit` can silently "succeed" while a real script
+# using NSString/AppKit bridging still crashes or fails to type-check.)
+if [[ -z "${AUTOPRINT_SDKROOT:-}" ]] && ! echo 'import Combine' | swiftc -sdk "$(xcrun --show-sdk-path)" - -o /dev/null 2>/dev/null; then
+  for candidate in /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk \
+                   /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk \
+                   /Library/Developer/CommandLineTools/SDKs/MacOSX13.sdk; do
+    if [[ -d "$candidate" ]]; then
+      export AUTOPRINT_SDKROOT="$candidate"
+      break
+    fi
+  done
+fi
+if [[ -n "${AUTOPRINT_SDKROOT:-}" ]]; then
+  export SDKROOT="$AUTOPRINT_SDKROOT"
+fi
+
 rm -rf "$STAGING" "$MOUNT_POINT" "$RW_DMG" "$DMG"
 mkdir -p "$STAGING/.background"
 cp -R "$APP" "$STAGING/AutoPrint.app"
@@ -29,7 +49,13 @@ cleanup() {
 }
 trap cleanup EXIT
 
-swift - "$BACKGROUND" "$ARROW_SOURCE" <<'SWIFT'
+# Note: this is compiled with swiftc and then run, rather than executed via
+# `swift -` (JIT interpret mode). Under the local mismatched toolchain/SDK
+# fallback above, interpret mode crashes on NSString/AppKit text drawing even
+# though the exact same code compiles and runs fine as a normal binary.
+BACKGROUND_GENERATOR_SRC="$(mktemp -t autoprint-dmg-background).swift"
+BACKGROUND_GENERATOR_BIN="$(mktemp -t autoprint-dmg-background)"
+cat > "$BACKGROUND_GENERATOR_SRC" <<'SWIFT'
 import AppKit
 
 let output = CommandLine.arguments[1]
@@ -88,6 +114,10 @@ guard let data = image.tiffRepresentation,
 }
 try png.write(to: URL(fileURLWithPath: output))
 SWIFT
+
+swiftc "$BACKGROUND_GENERATOR_SRC" -o "$BACKGROUND_GENERATOR_BIN"
+"$BACKGROUND_GENERATOR_BIN" "$BACKGROUND" "$ARROW_SOURCE"
+rm -f "$BACKGROUND_GENERATOR_SRC" "$BACKGROUND_GENERATOR_BIN"
 
 hdiutil create -volname AutoPrint -srcfolder "$STAGING" -ov -format UDRW -fs HFS+ "$RW_DMG" >/dev/null
 attach_output="$(hdiutil attach "$RW_DMG" -readwrite)"

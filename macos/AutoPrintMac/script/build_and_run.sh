@@ -64,7 +64,28 @@ SWIFT
   iconutil -c icns "$ICONSET" -o "$ICON"
 fi
 
+# Workaround for a known local toolchain issue: a freshly updated Command Line
+# Tools SDK can end up mismatched with the installed swiftc (e.g. swiftc reports
+# a newer target than the default SDK supports), which breaks even Foundation
+# imports like Combine. If the default SDK can't compile a trivial program,
+# fall back to an older bundled SDK instead of failing the whole build.
+SDK_FLAGS=()
+if [[ -n "${AUTOPRINT_SDKROOT:-}" ]]; then
+  SDK_FLAGS=(-sdk "$AUTOPRINT_SDKROOT")
+elif ! echo 'import Combine' | swiftc -sdk "$(xcrun --show-sdk-path)" - -o /dev/null 2>/dev/null; then
+  for candidate in /Library/Developer/CommandLineTools/SDKs/MacOSX14.4.sdk \
+                   /Library/Developer/CommandLineTools/SDKs/MacOSX13.3.sdk \
+                   /Library/Developer/CommandLineTools/SDKs/MacOSX13.sdk; do
+    if [[ -d "$candidate" ]]; then
+      echo "Default SDK can't build Foundation/Combine; falling back to $candidate" >&2
+      SDK_FLAGS=(-sdk "$candidate")
+      break
+    fi
+  done
+fi
+
 swiftc \
+  "${SDK_FLAGS[@]}" \
   -o "$BUILD/$EXECUTABLE" \
   $(find AutoPrintMac -name '*.swift' | sort)
 
