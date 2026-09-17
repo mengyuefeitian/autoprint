@@ -5,5 +5,17 @@
     <link>https://mengyuefeitian.github.io/autoprint/appcast.xml</link>
     <description>Most recent updates for AutoPrint.</description>
     <language>en</language>
+
+    <item>
+      <title>Version 0.1.27</title>
+      <pubDate>Thu, 17 Sep 2026 10:35:17 +0800</pubDate>
+      <sparkle:version>28</sparkle:version>
+      <sparkle:shortVersionString>0.1.27</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <enclosure
+        url="https://github.com/mengyuefeitian/autoprint/releases/download/v0.1.27/AutoPrint-0.1.27-local.dmg"
+        type="application/octet-stream"
+        sparkle:edSignature="iZHGQbnZNgxd4QzTqViPiOQdZAxL4QCXA4MaypiBpVr4jlDJu2u6lTVxInVXkQ4+Nn1sCn/V4usZ2WtbrbacBw==" length="1724028" />
+    </item>
   </channel>
 </rss>
